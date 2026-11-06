@@ -9,12 +9,17 @@ on:
 
 jobs:
   build-windows:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: windows-latest
     permissions:
       contents: write
+    env:
+      PYTHONUTF8: '1'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -22,20 +27,38 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Setup Python 3.12 for Neural Persian Voice Synthesis
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies & edge-tts v7.3+ (Sec-MS-GEC v2)
+        run: |
+          npm ci
+          python -m pip install --upgrade pip "edge-tts>=7.3.1"
 
       - name: Generate 72 Offline Neural Persian Voice Clips (fa-IR-DilaraNeural)
-        run: node scripts/generate_offline_voices.mjs
+        run: python scripts/generate_offline_voices.py
+
+      - name: Sync Generated Persian MP3 Clips to Branch
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/voices/*.mp3
+          $status = git status --porcelain public/voices
+          if ($status) {
+            git commit -m "chore(voices): bundle 72 neural Persian fa-IR-DilaraNeural MP3 clips [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          }
 
       - name: Build Web & Windows EXE (Installer + Portable v2.0.0)
         run: npm run dist:win
 
-      - name: Create Offline Web & Voice Pack ZIP Bundles
+      - name: Create Offline Web ZIP Bundle
         shell: pwsh
         run: |
           Compress-Archive -Path dist/* -DestinationPath release/Daneshmand-Kocholo-Offline-Web-2.0.0.zip -Force
-          Compress-Archive -Path public/voices/*.mp3 -DestinationPath release/Daneshmand-Kocholo-Voices-Pack-2.0.0.zip -Force
           Get-ChildItem release
 
       - name: Upload Windows EXE v2.0.0 Artifacts
@@ -58,7 +81,7 @@ jobs:
             **طراحی و برنامه‌نویسی توسط: مهندس سعید سالاری (`Saeed Salari`)**
 
             ### ✨ ویژگی‌های نسخه ۲.۰.۰ اولترا پرو:
-            - 🗣️ **گوینده هوشمند فارسی قدم‌به‌قدم (`خاله دلارا` و `عمو فرید`)**: راهنمایی صوتی کامل برای کودکان ۴ ساله در تمام مراحل بدون نیاز به خواندن متن (کاملاً آفلاین و بدون نیاز به نصب بسته زبان فارسی ویندوز!).
+            - 🗣️ **گوینده هوشمند فارسی قدم‌به‌قدم (`خاله دلارا` و `عمو فرید`)**: راهنمایی صوتی کامل برای کودکان ۴ ساله در تمام مراحل بدون نیاز به خواندن متن (همراه با ۷۲ فایل صوتی استودیویی فارسی داخل برنامه — کاملاً آفلاین و بدون نیاز به نصب بسته زبان فارسی ویندوز!).
             - 🎉 **قصه‌گویی علمی پس از انجام آزمایش**: توضیح شیرین و کودکانه علت علمی هر آزمایش بلافاصله پس از موفقیت (باد شدن بادکنک با گاز، جذب آهن به آهنربا، روشن شدن کلید و پریز و...).
             - 👨‍💻 **بخش ویژه سازنده و برنامه‌نویس اپلیکیشن** با قابلیت شخصی‌سازی عکس و پیام یادگاری پدر.
             - 🎨 **ارتقای گرافیک و راهنمای دست طلایی (`👆`)** در هر ۳ بخش (۹۰ مرحله برق، ۹۰ مرحله شیمی، ۹۰ مرحله علوم روزمره).
@@ -66,7 +89,7 @@ jobs:
             ### 📥 لینک‌های دانلود مستقیم ویندوز ۱۰ و ۱۱:
             - ⚡ **نسخه پرتابل بدون نیاز به نصب (فقط کلیک و اجرا):** `Daneshmand-Kocholo-Portable-2.0.0.exe`
             - 💿 **نسخه نصبی استاندارد ویندوز (Setup):** `Daneshmand-Kocholo-Setup-2.0.0.exe`
-            - 🌐 **بسته وب آفلاین (همراه با صداهای فارسی):** `Daneshmand-Kocholo-Offline-Web-2.0.0.zip`
+            - 🌐 **بسته وب آفلاین (همراه با تمام صداهای فارسی):** `Daneshmand-Kocholo-Offline-Web-2.0.0.zip`
           draft: false
           prerelease: false
           overwrite_files: true
@@ -74,7 +97,6 @@ jobs:
             release/Daneshmand-Kocholo-Setup-2.0.0.exe
             release/Daneshmand-Kocholo-Portable-2.0.0.exe
             release/Daneshmand-Kocholo-Offline-Web-2.0.0.zip
-            release/Daneshmand-Kocholo-Voices-Pack-2.0.0.zip
             release/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
