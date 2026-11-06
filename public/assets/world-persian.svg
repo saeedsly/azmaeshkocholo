@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320">
+  <defs>
+    <linearGradient id="bgP" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b0764"/>
+      <stop offset="52%" stop-color="#9d174d"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <radialGradient id="glowP" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#fde047" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#fde047" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="640" height="320" fill="url(#bgP)"/>
+  <rect width="640" height="320" fill="url(#glowP)"/>
+  <!-- Open Magical Book -->
+  <path d="M120,255 Q220,230 320,258 Q420,230 520,255 L540,278 Q420,255 320,282 Q220,255 100,278 Z" fill="#fef3c7" stroke="#f59e0b" stroke-width="4"/>
+  <path d="M132,245 Q224,218 320,248 L320,165 Q224,142 132,168 Z" fill="#fffbeb" stroke="#fcd34d" stroke-width="3"/>
+  <path d="M508,245 Q416,218 320,248 L320,165 Q416,142 508,168 Z" fill="#fffbeb" stroke="#fcd34d" stroke-width="3"/>
+  <!-- Floating 3D Persian Alphabet Tiles آ ب پ ت -->
+  <g transform="translate(92,50) rotate(-9)">
+    <rect width="102" height="112" rx="24" y="8" fill="#065f46"/>
+    <rect width="102" height="112" rx="24" fill="#10b981" stroke="#fff" stroke-width="4"/>
+    <text x="51" y="82" font-size="68" font-family="Tahoma, sans-serif" font-weight="900" fill="#fff" text-anchor="middle">آ</text>
+  </g>
+  <g transform="translate(212,34) rotate(-3)">
+    <rect width="104" height="114" rx="24" y="8" fill="#92400e"/>
+    <rect width="104" height="114" rx="24" fill="#f59e0b" stroke="#fff" stroke-width="4"/>
+    <text x="52" y="80" font-size="66" font-family="Tahoma, sans-serif" font-weight="900" fill="#0f172a" text-anchor="middle">ب</text>
+  </g>
+  <g transform="translate(332,34) rotate(4)">
+    <rect width="104" height="114" rx="24" y="8" fill="#1e40af"/>
+    <rect width="104" height="114" rx="24" fill="#38bdf8" stroke="#fff" stroke-width="4"/>
+    <text x="52" y="78" font-size="64" font-family="Tahoma, sans-serif" font-weight="900" fill="#fff" text-anchor="middle">پ</text>
+  </g>
+  <g transform="translate(450,52) rotate(9)">
+    <rect width="102" height="112" rx="24" y="8" fill="#831843"/>
+    <rect width="102" height="112" rx="24" fill="#f472b6" stroke="#fff" stroke-width="4"/>
+    <text x="51" y="80" font-size="64" font-family="Tahoma, sans-serif" font-weight="900" fill="#fff" text-anchor="middle">ش</text>
+  </g>
+  <text x="55" y="255" font-size="46">🍎</text>
+  <text x="545" y="255" font-size="46">🦋</text>
+  <text x="304" y="222" font-size="34">✨</text>
+</svg>

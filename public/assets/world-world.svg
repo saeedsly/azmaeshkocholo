@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320">
+  <defs>
+    <linearGradient id="bgW" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#022c22"/>
+      <stop offset="52%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="320" fill="url(#bgW)"/>
+  <!-- Stars & Ringed Planet Saturn -->
+  <circle cx="485" cy="95" r="46" fill="#f59e0b"/>
+  <ellipse cx="485" cy="95" rx="86" ry="20" fill="none" stroke="#fde68a" stroke-width="8" transform="rotate(-18 485 95)"/>
+  <circle cx="120" cy="64" r="32" fill="#facc15"/>
+  <!-- Green Hills & Ocean Bottom -->
+  <path d="M0,235 Q180,175 360,235 T640,225 L640,320 L0,320 Z" fill="#15803d"/>
+  <path d="M310,255 Q475,215 640,255 L640,320 L310,320 Z" fill="#0284c7"/>
+  <text x="82" y="255" font-size="74">🦁</text>
+  <text x="205" y="268" font-size="64">🐘</text>
+  <text x="315" y="152" font-size="68">🚀</text>
+  <text x="425" y="285" font-size="64">🐬</text>
+  <text x="532" y="275" font-size="58">🚒</text>
+</svg>

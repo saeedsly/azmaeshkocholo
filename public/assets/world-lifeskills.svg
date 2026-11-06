@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320">
+  <defs>
+    <linearGradient id="bgS" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#065f46"/>
+      <stop offset="50%" stop-color="#0369a1"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="320" fill="url(#bgS)"/>
+  <!-- Friendly Traffic Light -->
+  <rect x="276" y="34" width="88" height="212" rx="32" fill="#1e293b" stroke="#facc15" stroke-width="5"/>
+  <circle cx="320" cy="82" r="24" fill="#ef4444"/>
+  <circle cx="320" cy="140" r="24" fill="#facc15"/>
+  <circle cx="320" cy="198" r="24" fill="#22c55e"/>
+  <rect x="310" y="246" width="20" height="54" fill="#64748b"/>
+  <!-- Healthy Habits & Seasons Icons -->
+  <circle cx="135" cy="108" r="54" fill="#ffffff" fill-opacity="0.14" stroke="#7dd3fc" stroke-width="3"/>
+  <text x="135" y="128" font-size="58" text-anchor="middle">🪥</text>
+  <circle cx="135" cy="232" r="50" fill="#ffffff" fill-opacity="0.14" stroke="#86efac" stroke-width="3"/>
+  <text x="135" y="250" font-size="54" text-anchor="middle">🥦</text>
+  <circle cx="505" cy="108" r="54" fill="#ffffff" fill-opacity="0.14" stroke="#fde047" stroke-width="3"/>
+  <text x="505" y="128" font-size="58" text-anchor="middle">☀️</text>
+  <circle cx="505" cy="232" r="50" fill="#ffffff" fill-opacity="0.14" stroke="#f9a8d4" stroke-width="3"/>
+  <text x="505" y="250" font-size="54" text-anchor="middle">❤️</text>
+</svg>

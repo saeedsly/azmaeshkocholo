@@ -1,5 +1,5 @@
 import { EdgeTTS } from 'edge-tts-universal/browser';
-import { OFFLINE_VOICE_CLIPS } from './kidExplanations';
+import { OFFLINE_VOICE_CLIPS, OFFLINE_ENGLISH_VOICE_CLIPS } from './kidExplanations';
 
 export type NarratorVoiceId = 'fa-IR-DilaraNeural' | 'fa-IR-FaridNeural';
 
@@ -205,9 +205,45 @@ class SoundEngine {
   }
 
   public async speakClipKey(clipKey: string): Promise<void> {
+    if (OFFLINE_ENGLISH_VOICE_CLIPS[clipKey]) {
+      return this.speakEnglish(OFFLINE_ENGLISH_VOICE_CLIPS[clipKey], clipKey);
+    }
     const text = OFFLINE_VOICE_CLIPS[clipKey];
     if (!text) return;
     return this.speakPersian(text, clipKey);
+  }
+
+  public async speakEnglish(text: string, clipKey?: string): Promise<void> {
+    if (!this.voiceEnabled || !text) return;
+    this.stopSpeech();
+    const seq = this.speakSeq;
+
+    if (clipKey) {
+      const okMp3 = await this.playAudioElement(`./voices/${clipKey}.mp3`, seq, text);
+      if (okMp3 || seq !== this.speakSeq) return;
+    }
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        const voices = window.speechSynthesis.getVoices();
+        const enVoice =
+          voices.find((v) => v.lang.toLowerCase().startsWith('en-us')) ||
+          voices.find((v) => v.lang.toLowerCase().startsWith('en'));
+        const utter = new SpeechSynthesisUtterance(text);
+        if (enVoice) utter.voice = enVoice;
+        utter.lang = 'en-US';
+        utter.rate = 0.88;
+        utter.pitch = 1.15;
+        this.notifySpeaking(true, text);
+        utter.onend = () => this.notifySpeaking(false, '');
+        utter.onerror = () => this.notifySpeaking(false, '');
+        window.speechSynthesis.speak(utter);
+        return;
+      } catch {
+        // Ignore
+      }
+    }
+    this.notifySpeaking(false, '');
   }
 
   public playPop(pitch = 520) {

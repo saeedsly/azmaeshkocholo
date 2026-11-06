@@ -289,7 +289,7 @@ export const UpdateAndParentModal: React.FC<Props> = ({
                 مرکز مدیریت، بروزرسانی مراحل و پنل والدین
               </h3>
               <p className="text-xs text-slate-400">
-                نسخه ۲.۰.۰ اولترا پرو (گوینده فارسی هوشمند) | مجموع مراحل فعال: {allLevels.length} مرحله ({customLevels.length} مرحله افزوده‌شده)
+                نسخه ۳.۰.۰ مگا آکادمی (۱۰ بخش • ۹۰۰ مرحله سخنگو) | مجموع مراحل فعال: {allLevels.length} مرحله ({customLevels.length} مرحله افزوده‌شده)
               </p>
             </div>
           </div>
@@ -308,7 +308,7 @@ export const UpdateAndParentModal: React.FC<Props> = ({
             { id: 'update', label: '🔄 آپدیت و افزودن مراحل' },
             { id: 'builder', label: '🛠️ ساخت مرحله جدید' },
             { id: 'voice', label: '🎙️ تنظیمات و صدای بابا' },
-            { id: 'scenarios', label: '📚 ۲۷۰ سناریو و راهنمای EXE' },
+            { id: 'scenarios', label: '📚 مرورگر ۹۰۰ مرحله و EXE' },
           ].map((t) => (
             <button
               key={t.id}
@@ -677,17 +677,24 @@ export const UpdateAndParentModal: React.FC<Props> = ({
                 </p>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2">
                 <h4 className="font-black text-amber-300 flex items-center gap-2">
                   <BookOpen className="w-5 h-5" />
-                  مرورگر سریع تمام سناریوها (پرش مستقیم به هر مرحله)
+                  مرورگر سریع تمام ۹۰۰ مرحله در ۱۰ بخش (پرش مستقیم به هر مرحله)
                 </h4>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {(
                     [
-                      { id: 'electric', label: 'برق (۹۰+)' },
-                      { id: 'chemistry', label: 'شیمی (۹۰+)' },
-                      { id: 'physics', label: 'علوم (۹۰+)' },
+                      { id: 'electric', label: '⚡ برق (۹۰)' },
+                      { id: 'chemistry', label: '🧪 شیمی (۹۰)' },
+                      { id: 'physics', label: '🧲 علوم (۹۰)' },
+                      { id: 'math', label: '🔢 اعداد و ریاضی (۹۰)' },
+                      { id: 'persian', label: '📖 الفبای فارسی (۹۰)' },
+                      { id: 'english', label: '🌍 انگلیسی (۹۰)' },
+                      { id: 'logic', label: '🤖 هوش و ربات (۹۰)' },
+                      { id: 'art', label: '🎨 رنگ و موسیقی (۹۰)' },
+                      { id: 'world', label: '🦁 طبیعت و فضا (۹۰)' },
+                      { id: 'lifeskills', label: '🌟 مهارت زندگی (۹۰)' },
                     ] as const
                   ).map((f) => (
                     <button

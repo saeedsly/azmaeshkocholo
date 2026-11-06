@@ -3,6 +3,7 @@ import {
   ElectricLevel,
   ChemistryLevel,
   PhysicsLevel,
+  AcademyLevel,
   ElectricPartKind,
   ChemIngredientId,
 } from '../types/game';
@@ -147,6 +148,115 @@ export const OFFLINE_VOICE_CLIPS: Record<string, string> = {
     'چه آهنگ قشنگی زدی عزیزم! صدا از لرزش درست میشه؛ لیوان کم‌آب تندتر می‌لرزه و صدای زیر میده و لیوان پرآب صدای بم میده!',
   win_phys_plant:
     'به به! ببین چه گل قشنگی رویید! عزیزم گیاه‌ها زنده‌ان و با خاک خوب، آب باران و نور خورشید رشد می‌کنن و به ما گل و میوه میدن!',
+
+  // Spoken Persian Counting 1..10
+  num_fa_1: 'یک!',
+  num_fa_2: 'دو!',
+  num_fa_3: 'سه!',
+  num_fa_4: 'چهار!',
+  num_fa_5: 'پنج!',
+  num_fa_6: 'شش!',
+  num_fa_7: 'هفت!',
+  num_fa_8: 'هشت!',
+  num_fa_9: 'نُه!',
+  num_fa_10: 'دَه! آفرین قهرمان!',
+
+  // Academy Worlds Step-by-Step Guidance
+  acad_start_count:
+    'سلام قشنگم! بیا با هم بشماریم! دونه دونه روی شکل‌ها بزن تا برن توی سبد و با هم بلند بشماریمشون!',
+  acad_start_math_choice:
+    'قهرمان باهوش من! با دقت بشمار و روی کارت عدد درست کلیک کن!',
+  acad_start_train:
+    'بوق بوووق! قطار شاد رسیده، ولی یک واگنش خالیه! ببین کدوم گزینه جای خالی قطار رو کامل می‌کنه!',
+  acad_start_persian_letter:
+    'سلام گل قشنگم! بیا با حرف‌های شیرین فارسی بازی کنیم! ببین کدوم تصویر با این حرف قشنگ شروع می‌شه!',
+  acad_start_word_builder:
+    'آفرین عسلم! حالا به ترتیب روی حروف پایین بزن تا با هم این کلمه قشنگ رو بسازیم!',
+  acad_start_english:
+    'سلام دانشمند دو زبانه من! به صدای انگلیسی گوش کن و روی تصویر درست کلیک کن!',
+  acad_start_robot:
+    'سلام برنامه‌نویس کوچولو! با دکمه‌های جهت‌نما به ربات مهربون فرمان بده تا قدم به قدم برسه به ستاره طلایی!',
+  acad_start_logic:
+    'بیا هوشمون رو قوی کنیم عزیزم! با دقت نگاه کن و گزینه درست معما رو پیدا کن!',
+  acad_start_memory:
+    'بازی کارت‌های جادویی حافظه! دو تا کارت شبیه به هم رو برگردون و پیداشون کن!',
+  acad_start_color_mix:
+    'به آتلیه نقاشی خوش اومدی! دو تا رنگ اصلی رو بریز توی پالت جادویی ببین چه رنگ جدیدی ساخته می‌شه!',
+  acad_start_shape:
+    'بیا با شکل‌های هندسی قشنگ بازی کنیم! شکل درست رو از بین کارت‌ها پیدا کن!',
+  acad_start_music:
+    'وقت موسیقیه عزیزم! روی کلیدهای رنگین‌کمانی بلز که ستاره دارن بزن تا آهنگ قشنگمون نواخته بشه!',
+  acad_start_world:
+    'بیا بریم گردش توی دنیای حیوانات و طبیعت! ببین هر حیوون دوست‌داشتنی کجا زندگی می‌کنه و چی دوست داره!',
+  acad_start_space:
+    'فضانورد کوچولو آماده پرتاب! بیا رازهای خورشید، ماه و سیاره‌های فضا رو کشف کنیم!',
+  acad_start_lifeskills:
+    'قهرمان مودب و باهوش من! بیا ببینیم توی این موقعیت روزمره بهترین و درست‌ترین کار چیه!',
+  acad_start_sorting:
+    'بیا وسیله‌ها رو مرتب کنیم عزیزم! هر تصویر رو بنداز توی سبد مخصوص خودش!',
+  acad_wrong_gentle:
+    'نه عزیزم، یکی دیگه رو امتحان کن! تو می‌تونی پیداش کنی!',
+  acad_robot_bump:
+    'آخ! جلوی ربات مانع بود! بیا یک جهت دیگه رو انتخاب کنیم عزیزم!',
+
+  // Academy Worlds Post-Game Celebratory Explanations
+  win_math_count:
+    'هورااا نابغه ریاضی! چه دقیق و عالی شمردی! هر وقت دونه دونه بشماریم، دقیقاً می‌فهمیم چند تا وسیله داریم!',
+  win_math_add:
+    'باریکلا قهرمان اعداد! دیدی وقتی دو دسته رو کنار هم می‌ذاریم تعدادشون بیشتر می‌شه؟ به این کار قشنگ می‌گن جمع کردن!',
+  win_math_train:
+    'آفرین! واگن گمشده قطار اعداد رو عالی پیدا کردی و قطار با شادی راه افتاد!',
+  win_persian_letter:
+    'هورااا گل باسواد من! صدای اول کلمه رو فوق‌العاده تشخیص دادی! حروف الفبای فارسی کلید خوندن همه‌ی کتاب‌های قشنگ دنیاست!',
+  win_persian_word:
+    'آفرین هزار آفرین! حروف رو کنار هم چیدی و خودت یک کلمه کامل فارسی ساختی! بهت افتخار می‌کنم!',
+  win_english_word:
+    'آفرین قهرمان دو زبانه! این کلمه انگلیسی رو با تلفظ عالی یاد گرفتی! حالا می‌تونی به انگلیسی هم اسمش رو بگی!',
+  win_logic_robot:
+    'فوق‌العاده بود مهندس برنامه‌نویس کوچولو! درست مثل بابای برنامه‌نویست، به ربات دستورهای دقیق دادی و به هدف رسوندیش!',
+  win_logic_puzzle:
+    'هورااا! چقدر چشم‌هات تیزبینه و ذهنت قویه عزیزم! معمای هوش رو مثل یک دانشمند واقعی حل کردی!',
+  win_art_color:
+    'وااای چه رنگ محشری ساختی هنرمند کوچولو! وقتی رنگ‌های اصلی مثل قرمز، زرد و آبی رو با هم ترکیب کنیم، رنگ‌های جدید و جادویی به وجود میان!',
+  win_art_shape:
+    'باریکلا معمار خلاق! همه جای دنیای اطراف ما از شکل‌های هندسی مثل دایره، مربع، مثلث و مستطیل ساخته شده!',
+  win_art_music:
+    'به به چه آهنگ شادی نواختی موزیسین کوچولو! گوش دادن و نواختن ریتم موسیقی مغز رو خیلی خلاق و شاد می‌کنه!',
+  win_world_animal:
+    'هورااا حامی مهربون حیوانات! هر حیوونی خونه و غذای مخصوص خودش رو در طبیعت داره و ما باید مراقب طبیعت باشیم!',
+  win_world_space:
+    'آفرین فضانورد شجاع! زمین ما یکی از سیاره‌های منظومه شمسیه که دور خورشید گرم و نورانی می‌چرخه!',
+  win_world_jobs:
+    'باریکلا عزیزم! آتش‌نشان‌ها، دکترها، مهندس‌ها و خلبان‌ها با تلاششون به همه‌ی مردم کمک می‌کنن!',
+  win_life_safety:
+    'هزار آفرین قهرمان محتاط! رعایت قوانین ایمنی و چراغ راهنمایی باعث می‌شه همیشه سالم و در امان بمونیم!',
+  win_life_health:
+    'آفرین پسر تمیز و سالم! مسواک زدن، شستن دست‌ها و خوردن میوه و غذای سالم بدن ما رو قوی مثل قهرمان‌ها می‌کنه!',
+  win_life_seasons:
+    'باریکلا عزیزم! سال ما چهار تا فصل قشنگ داره: بهار پرشکوفه، تابستان گرم، پاییز برگ‌ریزان و زمستان برفی!',
+  win_life_manners:
+    'چقدر تو ماه و باادبی عزیزم! گفتن سلام، لطفاً و متشکرم دل همه رو شاد و مهربون می‌کنه!',
+};
+
+// Native kid-friendly American English pronunciation clips (generated with en-US-AnaNeural into public/voices/<key>.mp3)
+export const OFFLINE_ENGLISH_VOICE_CLIPS: Record<string, string> = {
+  en_apple: 'Apple! A, is for Apple!',
+  en_ball: 'Ball! B, is for Ball!',
+  en_cat: 'Cat! C, is for Cat!',
+  en_dog: 'Dog! D, is for Dog!',
+  en_elephant: 'Elephant! E, is for Elephant!',
+  en_fish: 'Fish! F, is for Fish!',
+  en_lion: 'Lion! L, is for Lion!',
+  en_monkey: 'Monkey! M, is for Monkey!',
+  en_sun: 'Sun! S, is for bright Sun!',
+  en_star: 'Star! Twinkle little Star!',
+  en_car: 'Car! Fast red Car!',
+  en_rocket: 'Rocket! Three, Two, One, Blast off!',
+  en_colors: 'Red, Blue, Yellow, Green! Beautiful colors!',
+  en_numbers: 'One, Two, Three, Four, Five! Awesome counting!',
+  en_hello: 'Hello my smart friend! Good morning! Thank you!',
+  en_family: 'Mom, Dad, and happy Family! I love my family!',
+  en_win_cheer: 'Yay! Amazing job little genius! You did it!',
 };
 
 export function getPartVoiceClipKey(kind: ElectricPartKind): string {
@@ -288,55 +398,133 @@ export function getWinExplanationForLevel(level: GameLevel): {
     return { clipKey: 'win_chem_color_mix', fullText: OFFLINE_VOICE_CLIPS.win_chem_color_mix };
   }
 
-  const ph = level as PhysicsLevel;
-  switch (ph.mode) {
-    case 'magnet_explore':
-      return { clipKey: 'win_phys_magnet', fullText: OFFLINE_VOICE_CLIPS.win_phys_magnet };
-    case 'magnet_poles':
-      return { clipKey: 'win_phys_poles', fullText: OFFLINE_VOICE_CLIPS.win_phys_poles };
-    case 'sink_float':
-      return { clipKey: 'win_phys_sink_float', fullText: OFFLINE_VOICE_CLIPS.win_phys_sink_float };
-    case 'static_balloon':
-      return { clipKey: 'win_phys_static', fullText: OFFLINE_VOICE_CLIPS.win_phys_static };
-    case 'balance_scale':
-      return { clipKey: 'win_phys_scale', fullText: OFFLINE_VOICE_CLIPS.win_phys_scale };
-    case 'light_prism':
-      return { clipKey: 'win_phys_prism', fullText: OFFLINE_VOICE_CLIPS.win_phys_prism };
-    case 'ramp_friction':
-      return { clipKey: 'win_phys_ramp', fullText: OFFLINE_VOICE_CLIPS.win_phys_ramp };
-    case 'wind_energy':
-      return { clipKey: 'win_phys_wind', fullText: OFFLINE_VOICE_CLIPS.win_phys_wind };
-    case 'sound_glasses':
-      return { clipKey: 'win_phys_sound', fullText: OFFLINE_VOICE_CLIPS.win_phys_sound };
-    case 'plant_growth':
-      return { clipKey: 'win_phys_plant', fullText: OFFLINE_VOICE_CLIPS.win_phys_plant };
+  if (level.lab === 'physics') {
+    const ph = level as PhysicsLevel;
+    switch (ph.mode) {
+      case 'magnet_explore':
+        return { clipKey: 'win_phys_magnet', fullText: OFFLINE_VOICE_CLIPS.win_phys_magnet };
+      case 'magnet_poles':
+        return { clipKey: 'win_phys_poles', fullText: OFFLINE_VOICE_CLIPS.win_phys_poles };
+      case 'sink_float':
+        return { clipKey: 'win_phys_sink_float', fullText: OFFLINE_VOICE_CLIPS.win_phys_sink_float };
+      case 'static_balloon':
+        return { clipKey: 'win_phys_static', fullText: OFFLINE_VOICE_CLIPS.win_phys_static };
+      case 'balance_scale':
+        return { clipKey: 'win_phys_scale', fullText: OFFLINE_VOICE_CLIPS.win_phys_scale };
+      case 'light_prism':
+        return { clipKey: 'win_phys_prism', fullText: OFFLINE_VOICE_CLIPS.win_phys_prism };
+      case 'ramp_friction':
+        return { clipKey: 'win_phys_ramp', fullText: OFFLINE_VOICE_CLIPS.win_phys_ramp };
+      case 'wind_energy':
+        return { clipKey: 'win_phys_wind', fullText: OFFLINE_VOICE_CLIPS.win_phys_wind };
+      case 'sound_glasses':
+        return { clipKey: 'win_phys_sound', fullText: OFFLINE_VOICE_CLIPS.win_phys_sound };
+      case 'plant_growth':
+        return { clipKey: 'win_phys_plant', fullText: OFFLINE_VOICE_CLIPS.win_phys_plant };
+    }
   }
+
+  // Academy Worlds (Math, Persian, English, Logic, Art, World, Lifeskills)
+  const ac = level as AcademyLevel;
+  const fallbackKey =
+    ac.winVoiceClipKey ||
+    (ac.lab === 'math'
+      ? ac.gameKind === 'sequence_train'
+        ? 'win_math_train'
+        : ac.equationDisplay
+        ? 'win_math_add'
+        : 'win_math_count'
+      : ac.lab === 'persian'
+      ? ac.gameKind === 'word_builder'
+        ? 'win_persian_word'
+        : 'win_persian_letter'
+      : ac.lab === 'english'
+      ? 'win_english_word'
+      : ac.lab === 'logic'
+      ? ac.gameKind === 'robot_coding'
+        ? 'win_logic_robot'
+        : 'win_logic_puzzle'
+      : ac.lab === 'art'
+      ? ac.gameKind === 'color_mix_studio'
+        ? 'win_art_color'
+        : ac.gameKind === 'xylophone_melody'
+        ? 'win_art_music'
+        : 'win_art_shape'
+      : ac.lab === 'world'
+      ? ac.chapter >= 4 && ac.chapter <= 6
+        ? 'win_world_space'
+        : ac.chapter >= 7
+        ? 'win_world_jobs'
+        : 'win_world_animal'
+      : ac.chapter <= 2
+      ? 'win_life_safety'
+      : ac.chapter <= 5
+      ? 'win_life_health'
+      : ac.chapter <= 7
+      ? 'win_life_seasons'
+      : 'win_life_manners');
+
+  return {
+    clipKey: fallbackKey,
+    fullText: ac.scienceTip || OFFLINE_VOICE_CLIPS[fallbackKey] || OFFLINE_VOICE_CLIPS.win_math_count,
+  };
 }
 
 export function getStartClipForLevel(level: GameLevel): string {
   if (level.lab === 'electric') return 'elec_step_place';
   if (level.lab === 'chemistry') return 'chem_step_start';
-  const ph = level as PhysicsLevel;
-  switch (ph.mode) {
-    case 'magnet_explore':
-      return 'phys_step_magnet';
-    case 'magnet_poles':
-      return 'phys_step_poles';
-    case 'sink_float':
-      return 'phys_step_sink_float';
-    case 'static_balloon':
-      return 'phys_step_balloon';
-    case 'balance_scale':
-      return 'phys_step_scale';
-    case 'light_prism':
-      return 'phys_step_prism';
-    case 'ramp_friction':
-      return 'phys_step_ramp';
-    case 'wind_energy':
-      return 'phys_step_wind';
-    case 'sound_glasses':
-      return 'phys_step_sound';
-    case 'plant_growth':
-      return 'phys_step_plant';
+  if (level.lab === 'physics') {
+    const ph = level as PhysicsLevel;
+    switch (ph.mode) {
+      case 'magnet_explore':
+        return 'phys_step_magnet';
+      case 'magnet_poles':
+        return 'phys_step_poles';
+      case 'sink_float':
+        return 'phys_step_sink_float';
+      case 'static_balloon':
+        return 'phys_step_balloon';
+      case 'balance_scale':
+        return 'phys_step_scale';
+      case 'light_prism':
+        return 'phys_step_prism';
+      case 'ramp_friction':
+        return 'phys_step_ramp';
+      case 'wind_energy':
+        return 'phys_step_wind';
+      case 'sound_glasses':
+        return 'phys_step_sound';
+      case 'plant_growth':
+        return 'phys_step_plant';
+    }
+  }
+
+  const ac = level as AcademyLevel;
+  if (ac.startVoiceClipKey) return ac.startVoiceClipKey;
+  switch (ac.gameKind) {
+    case 'counting_basket':
+      return 'acad_start_count';
+    case 'sequence_train':
+      return 'acad_start_train';
+    case 'word_builder':
+      return 'acad_start_word_builder';
+    case 'robot_coding':
+      return 'acad_start_robot';
+    case 'memory_match':
+      return 'acad_start_memory';
+    case 'color_mix_studio':
+      return 'acad_start_color_mix';
+    case 'xylophone_melody':
+      return 'acad_start_music';
+    case 'sorting_bins':
+      return 'acad_start_sorting';
+    default:
+      if (ac.lab === 'math') return 'acad_start_math_choice';
+      if (ac.lab === 'persian') return 'acad_start_persian_letter';
+      if (ac.lab === 'english') return 'acad_start_english';
+      if (ac.lab === 'logic') return 'acad_start_logic';
+      if (ac.lab === 'art') return 'acad_start_shape';
+      if (ac.lab === 'world') return ac.chapter >= 4 && ac.chapter <= 6 ? 'acad_start_space' : 'acad_start_world';
+      return 'acad_start_lifeskills';
   }
 }

@@ -1,4 +1,4 @@
-name: Build Windows EXE (Daneshmand Kocholo v2.0)
+name: Build Windows EXE (Daneshmand Kocholo v3.0 Mega-Academy)
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Setup Python 3.12 for Neural Persian Voice Synthesis
+      - name: Setup Python 3.12 for Neural Persian & English Voice Synthesis
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -37,10 +37,10 @@ jobs:
           npm ci
           python -m pip install --upgrade pip "edge-tts>=7.3.1"
 
-      - name: Generate 72 Offline Neural Persian Voice Clips (fa-IR-DilaraNeural)
+      - name: Generate 135 Offline Neural Persian & English Voice Clips
         run: python scripts/generate_offline_voices.py
 
-      - name: Sync Generated Persian MP3 Clips to Branch
+      - name: Sync Generated Persian & English MP3 Clips to Branch
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
@@ -48,55 +48,66 @@ jobs:
           git add public/voices/*.mp3
           $status = git status --porcelain public/voices
           if ($status) {
-            git commit -m "chore(voices): bundle 72 neural Persian fa-IR-DilaraNeural MP3 clips [skip ci]"
+            git commit -m "chore(voices): bundle 135 neural Persian & English MP3 clips for v3.0 [skip ci]"
+            git pull --rebase origin ${{ github.ref_name }}
             git push origin HEAD:${{ github.ref_name }}
           }
 
-      - name: Build Web & Windows EXE (Installer + Portable v2.0.0)
+      - name: Build Web & Windows EXE (Installer + Portable v3.0.0)
         run: npm run dist:win
 
       - name: Create Offline Web ZIP Bundle
         shell: pwsh
         run: |
-          Compress-Archive -Path dist/* -DestinationPath release/Daneshmand-Kocholo-Offline-Web-2.0.0.zip -Force
+          Compress-Archive -Path dist/* -DestinationPath release/Daneshmand-Kocholo-Offline-Web-3.0.0.zip -Force
           Get-ChildItem release
 
-      - name: Upload Windows EXE v2.0.0 Artifacts
+      - name: Upload Windows EXE v3.0.0 Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Daneshmand-Kocholo-Windows-EXE-v2.0.0
+          name: Daneshmand-Kocholo-Windows-EXE-v3.0.0
           path: |
             release/*.exe
             release/*.zip
             release/latest.yml
           if-no-files-found: error
 
-      - name: Publish Public GitHub Release v2.0.0 (Direct Download Links)
+      - name: Publish Public GitHub Release v3.0.0 (Direct Download Links)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.0.0
-          name: "دانشمند کوچولو نسخه ۲.۰.۰ اولترا پرو (با گوینده هوشمند فارسی + ۲۷۰ مرحله)"
+          tag_name: v3.0.0
+          name: "دانشمند کوچولو نسخه ۳.۰.۰ مگا آکادمی (۱۰ بخش آموزشی • ۹۰۰ مرحله سخنگوی فارسی و انگلیسی)"
           body: |
-            ## 🔬 دانلود بازی آموزشی «دانشمند کوچولو» — نسخه ۲.۰.۰ اولترا پرو (سخنگوی فارسی)
-            **طراحی و برنامه‌نویسی توسط: مهندس سعید سالاری (`Saeed Salari`)**
+            ## 🌟 دانلود آکادمی بزرگ بازی و آموزش «دانشمند کوچولو» — نسخه ۳.۰.۰ مگا آکادمی
+            **طراحی، معماری نرم‌افزار و برنامه‌نویسی توسط: مهندس سعید سالاری (`Saeed Salari`)**
 
-            ### ✨ ویژگی‌های نسخه ۲.۰.۰ اولترا پرو:
-            - 🗣️ **گوینده هوشمند فارسی قدم‌به‌قدم (`خاله دلارا` و `عمو فرید`)**: راهنمایی صوتی کامل برای کودکان ۴ ساله در تمام مراحل بدون نیاز به خواندن متن (همراه با ۷۲ فایل صوتی استودیویی فارسی داخل برنامه — کاملاً آفلاین و بدون نیاز به نصب بسته زبان فارسی ویندوز!).
-            - 🎉 **قصه‌گویی علمی پس از انجام آزمایش**: توضیح شیرین و کودکانه علت علمی هر آزمایش بلافاصله پس از موفقیت (باد شدن بادکنک با گاز، جذب آهن به آهنربا، روشن شدن کلید و پریز و...).
-            - 👨‍💻 **بخش ویژه سازنده و برنامه‌نویس اپلیکیشن** با قابلیت شخصی‌سازی عکس و پیام یادگاری پدر.
-            - 🎨 **ارتقای گرافیک و راهنمای دست طلایی (`👆`)** در هر ۳ بخش (۹۰ مرحله برق، ۹۰ مرحله شیمی، ۹۰ مرحله علوم روزمره).
+            ### 🎓 ۱۰ دنیای کامل آموزشی در قالب بازی کودکانه (۹۰۰ مرحله تعاملی!):
+            1. ⚡ **مهندسی برق و الکترونیک (۹۰ مرحله)**: از باتری و آرمیچر و پنکه تا برق‌کشی کلید و پریز ساختمان!
+            2. 🧪 **آزمایشگاه شیمی و معجون‌ها (۹۰ مرحله)**: نوشابه و نمک، باد شدن خودکار بادکنک، آتشفشان کفی و لامپ گدازه‌ای!
+            3. 🧲 **علوم روزمره و کشف طبیعت (۹۰ مرحله)**: آهنربا، شناوری در آب، منشور رنگین‌کمان و رشد گیاهان!
+            4. 🔢 **سرزمین اعداد و ریاضی شاد (۹۰ مرحله)**: شمارش گویا ۱ تا ۲۰ در سبد میوه، قطار اعداد و اولین جمع و تفریق تصویری!
+            5. 📖 **شهر الفبای شیرین فارسی (۹۰ مرحله)**: آموزش هر ۳۲ حرف الفبای فارسی (آ تا ی)، صدای اول کلمه‌ها و کارگاه کلمه‌سازی (آب، بابا، مامان، ستاره)!
+            6. 🌍 **جزیره زبان انگلیسی کودکانه (۹۰ مرحله)**: حروف A تا Z با تلفظ نیتیو انگلیسی، اعداد، رنگ‌ها، حیوانات، میوه‌ها و مکالمه روزمره!
+            7. 🤖 **باشگاه هوش، منطق و کدنویسی ربات (۹۰ مرحله)**: برنامه‌نویسی تصویری حرکت ربات با فلش‌ها، الگوها و کارت حافظه!
+            8. 🎨 **آتلیه رنگ، اشکال هندسی و موسیقی (۹۰ مرحله)**: ترکیب جادویی رنگ‌ها و نواختن آهنگ‌های کودکانه روی بلز رنگین‌کمانی!
+            9. 🦁 **دهکده حیوانات، فضا و مشاغل (۹۰ مرحله)**: خانه حیوانات، سیاره‌های منظومه شمسی و آشنایی با مشاغل و خودروهای امدادی!
+            10. 🌟 **شهر مهارت‌های زندگی، ادب و ایمنی (۹۰ مرحله)**: چراغ راهنمایی، مسواک و بهداشت، تغذیه سالم، چهار فصل و کلمات جادویی ادب!
+
+            ### ✨ امکانات ویژه برای کودکان ۴ ساله:
+            - 🗣️ **۱۳۵ فایل صوتی استودیویی فارسی و انگلیسی داخلی** (کاملاً آفلاین و بدون نیاز به خواندن متن!) + قصه‌گویی صوتی پس از پایان هر مرحله.
+            - 👨‍💻 **بخش ویژه معرفی طراح و برنامه‌نویس (`مهندس سعید سالاری`)** با قابلیت شخصی‌سازی عکس و پیام پدر.
 
             ### 📥 لینک‌های دانلود مستقیم ویندوز ۱۰ و ۱۱:
-            - ⚡ **نسخه پرتابل بدون نیاز به نصب (فقط کلیک و اجرا):** `Daneshmand-Kocholo-Portable-2.0.0.exe`
-            - 💿 **نسخه نصبی استاندارد ویندوز (Setup):** `Daneshmand-Kocholo-Setup-2.0.0.exe`
-            - 🌐 **بسته وب آفلاین (همراه با تمام صداهای فارسی):** `Daneshmand-Kocholo-Offline-Web-2.0.0.zip`
+            - ⚡ **نسخه پرتابل بدون نیاز به نصب (فقط کلیک و اجرا):** `Daneshmand-Kocholo-Portable-3.0.0.exe`
+            - 💿 **نسخه نصبی استاندارد ویندوز (Setup):** `Daneshmand-Kocholo-Setup-3.0.0.exe`
+            - 🌐 **بسته وب آفلاین (همراه با تمام ۱۳۵ فایل صوتی):** `Daneshmand-Kocholo-Offline-Web-3.0.0.zip`
           draft: false
           prerelease: false
           overwrite_files: true
           files: |
-            release/Daneshmand-Kocholo-Setup-2.0.0.exe
-            release/Daneshmand-Kocholo-Portable-2.0.0.exe
-            release/Daneshmand-Kocholo-Offline-Web-2.0.0.zip
+            release/Daneshmand-Kocholo-Setup-3.0.0.exe
+            release/Daneshmand-Kocholo-Portable-3.0.0.exe
+            release/Daneshmand-Kocholo-Offline-Web-3.0.0.zip
             release/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

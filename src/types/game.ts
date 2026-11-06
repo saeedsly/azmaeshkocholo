@@ -1,4 +1,13 @@
-export type LabId = 'electric' | 'chemistry' | 'physics';
+export type AcademyLabId =
+  | 'math'
+  | 'persian'
+  | 'english'
+  | 'logic'
+  | 'art'
+  | 'world'
+  | 'lifeskills';
+
+export type LabId = 'electric' | 'chemistry' | 'physics' | AcademyLabId;
 
 export type TerminalRole =
   | 'pos'       // + DC or Phase (L)
@@ -219,7 +228,115 @@ export interface PhysicsLevel {
   isCustomOrUpdate?: boolean;
 }
 
-export type GameLevel = ElectricLevel | ChemistryLevel | PhysicsLevel;
+export type AcademyGameKind =
+  | 'counting_basket'
+  | 'choice_discovery'
+  | 'sequence_train'
+  | 'word_builder'
+  | 'robot_coding'
+  | 'memory_match'
+  | 'color_mix_studio'
+  | 'xylophone_melody'
+  | 'sorting_bins';
+
+export interface AcademyOptionItem {
+  id: string;
+  label: string;
+  subLabel?: string;
+  emoji?: string;
+  colorHex?: string;
+  isCorrect?: boolean;
+  voiceTextFa?: string;
+  voiceClipKey?: string;
+}
+
+export interface AcademyLevel {
+  id: string;
+  lab: AcademyLabId;
+  number: number; // 1..90
+  chapter: number; // 1..9
+  chapterTitle: string;
+  title: string;
+  kidPrompt: string;
+  scienceTip: string; // educational takeaway / story
+  winVoiceClipKey?: string;
+  startVoiceClipKey?: string;
+  gameKind: AcademyGameKind;
+
+  // Hero / spotlight card (used in choice_discovery, counting_basket, word_builder)
+  heroDisplay?: string;
+  heroSubLabel?: string;
+  heroEmoji?: string;
+  heroColorHex?: string;
+  englishVoiceClipKey?: string;
+
+  // Options for choice_discovery & sequence_train
+  options?: AcademyOptionItem[];
+
+  // Counting basket props
+  targetCount?: number;
+  totalSpawnCount?: number;
+  countEmoji?: string;
+  countItemNameFa?: string;
+  equationDisplay?: string; // e.g. "۲ 🍎 + ۱ 🍎 = ؟"
+
+  // Sequence train props
+  wagons?: string[];
+  missingWagonIndex?: number;
+
+  // Word builder props
+  targetLetters?: string[];
+  extraLetters?: string[];
+  rtlWord?: boolean;
+
+  // Robot coding props
+  gridSize?: number;
+  robotStart?: [number, number]; // [row, col]
+  goalPos?: [number, number];
+  goalEmoji?: string;
+  obstacles?: [number, number][];
+
+  // Memory match props
+  memoryPairs?: {
+    pairId: string;
+    cardA: string;
+    cardB: string;
+    speakFa?: string;
+  }[];
+
+  // Color mix studio props
+  paintChoices?: {
+    id: string;
+    nameFa: string;
+    colorHex: string;
+    isRequired: boolean;
+  }[];
+  mixedResultNameFa?: string;
+  mixedResultColorHex?: string;
+  paintTargetEmoji?: string;
+
+  // Xylophone melody props
+  melodyNotes?: number[]; // indices 0..6
+  melodyTitleFa?: string;
+
+  // Sorting bins props
+  binA?: { title: string; emoji: string; colorHex: string };
+  binB?: { title: string; emoji: string; colorHex: string };
+  sortItems?: {
+    id: string;
+    nameFa: string;
+    emoji: string;
+    targetBin: 'A' | 'B';
+  }[];
+
+  isCustomOrUpdate?: boolean;
+}
+
+export type GameLevel =
+  | ElectricLevel
+  | ChemistryLevel
+  | PhysicsLevel
+  | AcademyLevel;
 
 export interface LevelPackManifest {
   packId: string;
@@ -232,7 +349,7 @@ export interface LevelPackManifest {
 
 export interface PlayerProgress {
   completedIds: Record<string, number>; // levelId -> stars (1..3)
-  lastPlayedLevelId?: Record<LabId, string>;
+  lastPlayedLevelId?: Partial<Record<LabId, string>>;
   soundEnabled: boolean;
   voiceEnabled: boolean;
   narratorVoice?: 'fa-IR-DilaraNeural' | 'fa-IR-FaridNeural';
