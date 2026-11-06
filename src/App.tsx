@@ -14,21 +14,26 @@ import { ElectricLab } from './components/labs/ElectricLab';
 import { ChemistryLab } from './components/labs/ChemistryLab';
 import { PhysicsLab } from './components/labs/PhysicsLab';
 import { UpdateAndParentModal } from './components/UpdateAndParentModal';
+import { CreatorShowcaseModal } from './components/CreatorShowcaseModal';
+import { AmbientLabBackground } from './components/AmbientLabBackground';
+import { getStartClipForLevel, getWinExplanationForLevel } from './utils/kidExplanations';
 import { soundEngine } from './utils/soundEngine';
 import {
   Volume2,
   VolumeX,
   Settings,
-  Star,
   Home,
   Grid,
-  ChevronLeft,
   ChevronRight,
-  Maximize2,
-  RefreshCw,
+  ChevronLeft,
+  Star,
+  Trophy,
   Award,
-  Sparkles,
+  Maximize2,
   Download,
+  RefreshCw,
+  Code2,
+  Sparkles,
 } from 'lucide-react';
 
 const STORAGE_PROGRESS_KEY = 'daneshmand_kocholo_progress_v1';
@@ -36,685 +41,883 @@ const STORAGE_CUSTOM_LEVELS_KEY = 'daneshmand_kocholo_custom_levels_v1';
 
 const DEFAULT_PROGRESS: PlayerProgress = {
   completedIds: {},
+  lastPlayedLevelId: {
+    electric: 'elec-001',
+    chemistry: 'chem-001',
+    physics: 'phys-001',
+  },
   soundEnabled: true,
   voiceEnabled: true,
-  updateManifestUrl: './updates/latest-levels.json',
+  narratorVoice: 'fa-IR-DilaraNeural',
+  childName: 'پسر دانشمندم',
+  creatorName: 'مهندس سعید سالاری (Saeed Salari)',
+  creatorRole: 'طراح، معمار نرم‌افزار و برنامه‌نویس اپلیکیشن',
+  creatorDedication:
+    'پسرم، این آزمایشگاه بزرگ رو با تمام عشقم برنامه‌نویسی کردم تا هر روز با بازی و شادی، رازهای برق، شیمی و دنیای علم رو کشف کنی. بهت افتخار می‌کنم دانشمند کوچولوی بابا! 💛',
   installedPackIds: [],
-  childName: 'دانشمند کوچولو',
+  updateManifestUrl: './updates/latest-levels.json',
 };
 
-const LAB_CARDS: Array<{
-  id: LabId;
-  title: string;
-  subtitle: string;
-  badge: string;
-  image: string;
-  gradient: string;
-  border: string;
-}> = [
+const LAB_META: Record<
+  LabId,
   {
-    id: 'electric',
-    title: 'آزمایشگاه برق و الکترونیک',
-    subtitle: 'از وصل کردن باتری و آرمیچر تا سیم‌کشی حرفه‌ای تابلو فیوز، کلید یک‌پل، دوپل و پریز برق!',
-    badge: '۹۰ مرحله حرفه‌ای برق',
-    image: './assets/lab-electric.jpg',
-    gradient: 'from-amber-500/25 via-orange-600/15 to-slate-900',
-    border: 'border-amber-400/50 hover:border-amber-300',
+    title: string;
+    subtitle: string;
+    badgeText: string;
+    bannerImg: string;
+    gradient: string;
+    border: string;
+    accentText: string;
+    introClip: string;
+  }
+> = {
+  electric: {
+    title: 'مهندسی برق و الکترونیک',
+    subtitle: 'از باتری و آرمیچر و پنکه تا برق‌کشی حرفه‌ای کلید و پریز ساختمان!',
+    badgeText: '۹۰ مرحله واقعی برق',
+    bannerImg: './assets/world-electric.png',
+    gradient: 'from-amber-500/25 via-orange-600/15 to-slate-900/95',
+    border: 'border-amber-400/65 hover:border-amber-300',
+    accentText: 'text-amber-300',
+    introClip: 'elec_step_place',
   },
-  {
-    id: 'chemistry',
-    title: 'آزمایشگاه شیمی و واکنش‌ها',
-    subtitle: 'فواره نوشابه و نمک در دو شیشه، کوه آتشفشان، شیر جادویی، ترکیب رنگ‌ها، چراغ گدازه‌ای و اسلایم!',
-    badge: '۹۰ مرحله جذاب شیمی',
-    image: './assets/lab-chemistry.jpg',
-    gradient: 'from-fuchsia-500/25 via-purple-600/15 to-slate-900',
-    border: 'border-fuchsia-400/50 hover:border-fuchsia-300',
+  chemistry: {
+    title: 'آزمایشگاه شیمی و معجون‌ها',
+    subtitle: 'نوشابه و نمک، باد شدن خودکار بادکنک، آتشفشان کفی و لامپ گدازه‌ای!',
+    badgeText: '۹۰ مرحله شیمی جذاب',
+    bannerImg: './assets/world-chemistry.png',
+    gradient: 'from-fuchsia-500/25 via-purple-600/15 to-slate-900/95',
+    border: 'border-fuchsia-400/65 hover:border-fuchsia-300',
+    accentText: 'text-fuchsia-300',
+    introClip: 'chem_step_start',
   },
-  {
-    id: 'physics',
-    title: 'آزمایشگاه علوم و آهنربا',
-    subtitle: 'جذب آهن و نچسبیدن به چوب با آهنربا، شناوری در آب، بادکنک الکتریسیته ساکن، ترازو و منشور نور!',
-    badge: '۹۰ مرحله کشف علمی',
-    image: './assets/lab-physics.jpg',
-    gradient: 'from-emerald-500/25 via-cyan-600/15 to-slate-900',
-    border: 'border-emerald-400/50 hover:border-emerald-300',
+  physics: {
+    title: 'علوم روزمره و کشف طبیعت',
+    subtitle: 'آهنربا به آهن می‌چسبه نه چوب! شناوری در آب، منشور رنگین‌کمان و گیاهان!',
+    badgeText: '۹۰ مرحله علوم روزمره',
+    bannerImg: './assets/world-physics.png',
+    gradient: 'from-emerald-500/25 via-cyan-600/15 to-slate-900/95',
+    border: 'border-emerald-400/65 hover:border-emerald-300',
+    accentText: 'text-emerald-300',
+    introClip: 'phys_magnet_start',
   },
-];
+};
 
-export const App: React.FC = () => {
+export function App() {
   const [progress, setProgress] = useState<PlayerProgress>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_PROGRESS_KEY);
-      if (saved) return { ...DEFAULT_PROGRESS, ...JSON.parse(saved) };
+      const raw = localStorage.getItem(STORAGE_PROGRESS_KEY);
+      if (raw) {
+        return { ...DEFAULT_PROGRESS, ...JSON.parse(raw) };
+      }
     } catch {
-      // Ignore storage errors
+      // ignore
     }
     return DEFAULT_PROGRESS;
   });
 
   const [customLevels, setCustomLevels] = useState<GameLevel[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_CUSTOM_LEVELS_KEY);
-      if (saved) return JSON.parse(saved);
+      const raw = localStorage.getItem(STORAGE_CUSTOM_LEVELS_KEY);
+      if (raw) return JSON.parse(raw);
     } catch {
-      // Ignore storage errors
+      // ignore
     }
     return [];
   });
 
-  const [screen, setScreen] = useState<'home' | 'map' | 'play'>('home');
+  const [view, setView] = useState<'home' | 'map' | 'play'>('home');
   const [activeLab, setActiveLab] = useState<LabId>('electric');
-  const [selectedChapter, setSelectedChapter] = useState<number>(1);
-  const [activeLevelId, setActiveLevelId] = useState<string>('elec-1');
+  const [activeLevelId, setActiveLevelId] = useState<string>('elec-001');
   const [parentModalOpen, setParentModalOpen] = useState<boolean>(false);
+  const [creatorModalOpen, setCreatorModalOpen] = useState<boolean>(false);
+  const [isDesktopApp, setIsDesktopApp] = useState<boolean>(false);
+  const [isSpeakingNow, setIsSpeakingNow] = useState<boolean>(false);
 
-  // Sync sound engine settings
+  // Subscribe to live voice engine speaking state for animated mascot soundwaves
   useEffect(() => {
-    soundEngine.soundEnabled = progress.soundEnabled;
+    return soundEngine.subscribeSpeaking(setIsSpeakingNow);
+  }, []);
+
+  useEffect(() => {
+    soundEngine.enabled = progress.soundEnabled;
     soundEngine.voiceEnabled = progress.voiceEnabled;
+    soundEngine.narratorVoice = progress.narratorVoice || 'fa-IR-DilaraNeural';
     soundEngine.customCheerUrl = progress.customCheerAudioDataUrl;
     try {
       localStorage.setItem(STORAGE_PROGRESS_KEY, JSON.stringify(progress));
     } catch {
-      // Ignore quota errors
+      // ignore quota errors
     }
   }, [progress]);
 
-  // Persist custom / updated levels (in both localStorage and Electron disk store if running as .exe!)
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_CUSTOM_LEVELS_KEY, JSON.stringify(customLevels));
     } catch {
-      // Ignore
-    }
-    if (window.desktopAPI) {
-      window.desktopAPI
-        .savePacks([
-          {
-            packId: 'saved-user-levels',
-            version: '1.0',
-            title: 'Saved Levels',
-            description: '',
-            releasedAt: '',
-            levels: customLevels,
-          },
-        ])
-        .catch(() => {});
+      // ignore
     }
   }, [customLevels]);
 
-  // Load Electron saved packs on startup if running as Windows .exe
   useEffect(() => {
-    if (window.desktopAPI) {
-      window.desktopAPI
-        .loadSavedPacks()
-        .then((packs) => {
-          if (Array.isArray(packs) && packs.length > 0) {
-            const loaded = packs.flatMap((p) => p.levels || []);
-            if (loaded.length > 0) {
-              setCustomLevels((prev) => {
-                const existingIds = new Set(prev.map((x) => x.id));
-                const merged = [...prev];
-                loaded.forEach((l) => {
-                  if (!existingIds.has(l.id)) merged.push(l);
-                });
-                return merged;
-              });
-            }
+    if (window.desktopAPI?.isDesktop) {
+      setIsDesktopApp(true);
+      window.desktopAPI.loadSavedPacks().then((packs) => {
+        if (Array.isArray(packs) && packs.length > 0) {
+          const imported: GameLevel[] = [];
+          packs.forEach((p) => {
+            if (Array.isArray(p.levels)) imported.push(...p.levels);
+          });
+          if (imported.length > 0) {
+            setCustomLevels((prev) => {
+              const ids = new Set(prev.map((l) => l.id));
+              return [...prev, ...imported.filter((l) => !ids.has(l.id))];
+            });
           }
-        })
-        .catch(() => {});
+        }
+      });
     }
   }, []);
 
-  const allLevels = useMemo<GameLevel[]>(
-    () => [...ELECTRIC_LEVELS, ...CHEMISTRY_LEVELS, ...PHYSICS_LEVELS, ...customLevels],
-    [customLevels]
-  );
+  const allLevels = useMemo<GameLevel[]>(() => {
+    return [
+      ...ELECTRIC_LEVELS,
+      ...CHEMISTRY_LEVELS,
+      ...PHYSICS_LEVELS,
+      ...customLevels,
+    ];
+  }, [customLevels]);
 
-  const labLevels = useMemo(
-    () =>
-      allLevels
-        .filter((l) => l.lab === activeLab)
+  const levelsByLab = useMemo(() => {
+    return {
+      electric: allLevels
+        .filter((l) => l.lab === 'electric')
         .sort((a, b) => a.number - b.number),
-    [allLevels, activeLab]
-  );
+      chemistry: allLevels
+        .filter((l) => l.lab === 'chemistry')
+        .sort((a, b) => a.number - b.number),
+      physics: allLevels
+        .filter((l) => l.lab === 'physics')
+        .sort((a, b) => a.number - b.number),
+    };
+  }, [allLevels]);
 
-  const currentLevel = useMemo(
-    () => allLevels.find((l) => l.id === activeLevelId) || labLevels[0],
-    [allLevels, activeLevelId, labLevels]
-  );
+  const activeLevel = useMemo<GameLevel>(() => {
+    const found = allLevels.find((l) => l.id === activeLevelId);
+    return found || levelsByLab[activeLab][0];
+  }, [allLevels, activeLevelId, activeLab, levelsByLab]);
 
-  // Auto-read prompt softly when entering a level
+  // Automatically narrate the Persian instruction whenever a child enters a level!
   useEffect(() => {
-    if (screen === 'play' && currentLevel && progress.voiceEnabled) {
-      const timer = setTimeout(() => {
-        soundEngine.speakPersian(currentLevel.kidPrompt);
-      }, 350);
-      return () => clearTimeout(timer);
-    }
-  }, [screen, currentLevel?.id]);
+    if (view !== 'play' || !activeLevel) return;
+    const timer = setTimeout(() => {
+      const clipKey = getStartClipForLevel(activeLevel);
+      soundEngine.speakClipKey(clipKey);
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [view, activeLevel]);
 
-  const totalCompletedCount = Object.keys(progress.completedIds).length;
-  const totalStars = Object.values(progress.completedIds).reduce((a, b) => a + b, 0);
+  const totalStars = Object.keys(progress.completedIds).length * 3;
+  const completedCountForLab = (lab: LabId) =>
+    levelsByLab[lab].filter((l) => progress.completedIds[l.id]).length;
 
-  const scientistRank =
-    totalCompletedCount >= 180
-      ? '👑 پروفسور ارشد کل آزمایشگاه'
-      : totalCompletedCount >= 60
-      ? '🚀 مخترع درخشان'
-      : totalCompletedCount >= 15
-      ? '⚡ مهندس خلاق'
-      : '🌟 دانشمند کنجکاو';
+  const scientistRank = useMemo(() => {
+    const done = Object.keys(progress.completedIds).length;
+    if (done >= 180) return 'پروفسور نابغه کل آزمایشگاه 🏆';
+    if (done >= 90) return 'مخترع ارشد علوم 🥇';
+    if (done >= 35) return 'مهندس خلاق آزمایشگاه 🥈';
+    if (done >= 10) return 'کاشف باهوش ستاره‌دار 🌟';
+    return 'دانشمند کوچولوی کنجکاو 🔬';
+  }, [progress.completedIds]);
 
   const updateProgress = (patch: Partial<PlayerProgress>) => {
     setProgress((prev) => ({ ...prev, ...patch }));
   };
 
-  const handleAddLevels = (incoming: GameLevel[], packId?: string) => {
-    setCustomLevels((prev) => {
-      const map = new Map(prev.map((l) => [l.id, l]));
-      incoming.forEach((lvl) => map.set(lvl.id, { ...lvl, isCustomOrUpdate: true }));
-      return Array.from(map.values());
+  const handleOpenLabPlay = (lab: LabId, specificLevelId?: string) => {
+    soundEngine.playPop(620);
+    setActiveLab(lab);
+    const prevLast = progress.lastPlayedLevelId || {
+      electric: 'elec-001',
+      chemistry: 'chem-001',
+      physics: 'phys-001',
+    };
+    const targetId =
+      specificLevelId || prevLast[lab] || levelsByLab[lab][0]?.id;
+    setActiveLevelId(targetId);
+    updateProgress({
+      lastPlayedLevelId: {
+        ...prevLast,
+        [lab]: targetId,
+      },
     });
-    if (packId && !progress.installedPackIds.includes(packId)) {
-      updateProgress({ installedPackIds: [...progress.installedPackIds, packId] });
-    }
+    setView('play');
   };
 
-  const handleCompleteCurrentLevel = () => {
-    if (!currentLevel) return;
+  const handleLevelComplete = () => {
     setProgress((prev) => ({
       ...prev,
       completedIds: {
         ...prev.completedIds,
-        [currentLevel.id]: 3,
+        [activeLevel.id]: 3,
       },
     }));
   };
 
-  const handleGoNextLevel = () => {
-    if (!currentLevel) return;
-    const idx = labLevels.findIndex((l) => l.id === currentLevel.id);
-    if (idx >= 0 && idx < labLevels.length - 1) {
-      const next = labLevels[idx + 1];
-      setActiveLevelId(next.id);
-      setSelectedChapter(next.chapter);
+  const handleNextLevel = () => {
+    soundEngine.stopSpeech();
+    soundEngine.playPop(680);
+    const list = levelsByLab[activeLevel.lab];
+    const idx = list.findIndex((l) => l.id === activeLevel.id);
+    if (idx >= 0 && idx + 1 < list.length) {
+      const nextLvl = list[idx + 1];
+      setActiveLevelId(nextLvl.id);
+      const prevLast = progress.lastPlayedLevelId || {
+        electric: 'elec-001',
+        chemistry: 'chem-001',
+        physics: 'phys-001',
+      };
+      updateProgress({
+        lastPlayedLevelId: {
+          ...prevLast,
+          [activeLevel.lab]: nextLvl.id,
+        },
+      });
     } else {
-      setScreen('map');
+      setView('map');
     }
   };
 
-  const handleGoPrevLevel = () => {
-    if (!currentLevel) return;
-    const idx = labLevels.findIndex((l) => l.id === currentLevel.id);
+  const handlePrevLevel = () => {
+    soundEngine.stopSpeech();
+    soundEngine.playPop(480);
+    const list = levelsByLab[activeLevel.lab];
+    const idx = list.findIndex((l) => l.id === activeLevel.id);
     if (idx > 0) {
-      const prev = labLevels[idx - 1];
-      setActiveLevelId(prev.id);
-      setSelectedChapter(prev.chapter);
+      setActiveLevelId(list[idx - 1].id);
     }
   };
 
-  const openLabPortal = (labId: LabId, directPlay = false) => {
-    soundEngine.playPop(620);
-    setActiveLab(labId);
-    const list = allLevels
-      .filter((l) => l.lab === labId)
-      .sort((a, b) => a.number - b.number);
-    const firstUnfinished = list.find((l) => !progress.completedIds[l.id]) || list[0];
-    setActiveLevelId(firstUnfinished.id);
-    setSelectedChapter(firstUnfinished.chapter);
-    setScreen(directPlay ? 'play' : 'map');
-  };
-
-  const toggleFullscreen = () => {
-    if (window.desktopAPI) {
-      window.desktopAPI.toggleFullscreen();
-    } else if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
-    } else {
-      document.exitFullscreen?.().catch(() => {});
+  const handleAddLevels = (incoming: GameLevel[], packId?: string) => {
+    setCustomLevels((prev) => {
+      const existingIds = new Set(allLevels.map((l) => l.id));
+      const fresh = incoming.filter((l) => !existingIds.has(l.id));
+      const merged = [...prev, ...fresh];
+      if (window.desktopAPI?.savePacks) {
+        window.desktopAPI.savePacks([
+          {
+            packId: packId || `saved-${Date.now()}`,
+            version: '2.0.0',
+            title: 'مراحل سفارشی و آپدیت',
+            description: 'مراحل اضافه شده توسط والدین یا سرور بروزرسانی',
+            releasedAt: new Date().toISOString(),
+            levels: merged,
+          },
+        ]);
+      }
+      return merged;
+    });
+    if (packId && !progress.installedPackIds.includes(packId)) {
+      updateProgress({
+        installedPackIds: [...progress.installedPackIds, packId],
+      });
     }
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950 via-slate-950 to-black text-white flex flex-col">
-      {/* Top Global Header Bar */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-slate-950/80 border-b border-white/10 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
+    <div
+      dir="rtl"
+      className="relative min-h-screen text-white flex flex-col selection:bg-amber-400 selection:text-slate-950"
+    >
+      {/* Ultra-Pro Animated Aurora & Floating Science Backdrop */}
+      <AmbientLabBackground />
+
+      {/* Top Glassmorphism Navigation Header */}
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-slate-950/80 border-b border-white/15 px-3 sm:px-6 py-2.5 shadow-2xl">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
+          {/* Brand Logo + Live Voice Equalizer Badge */}
+          <div
             onClick={() => {
-              soundEngine.playPop(520);
-              setScreen('home');
+              soundEngine.playPop(560);
+              setView('home');
+              soundEngine.speakClipKey('welcome_home');
             }}
-            className="flex items-center gap-2.5 group focus:outline-none"
+            className="cursor-pointer flex items-center gap-3 group"
           >
-            <img
-              src="./icon.png"
-              alt="دانشمند کوچولو"
-              className="w-11 h-11 rounded-2xl border-2 border-amber-400 shadow-lg group-hover:scale-105 transition"
-            />
-            <div className="text-right">
-              <h1 className="text-lg sm:text-xl font-black bg-gradient-to-l from-amber-300 via-yellow-200 to-cyan-300 bg-clip-text text-transparent">
-                دانشمند کوچولو
-              </h1>
-              <p className="text-[11px] text-slate-400 font-bold hidden sm:block">
-                {scientistRank}
+            <div className="relative">
+              <img
+                src="./icon.png"
+                alt="دانشمند کوچولو"
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl border-2 shadow-lg transition ${
+                  isSpeakingNow
+                    ? 'border-emerald-400 scale-110 shadow-[0_0_22px_rgba(52,211,153,0.75)]'
+                    : 'border-amber-400 group-hover:scale-105'
+                }`}
+              />
+              {isSpeakingNow && (
+                <span className="absolute -bottom-1 -left-1 px-1.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black animate-pulse">
+                  🔊 گویا
+                </span>
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-2xl font-black tracking-tight bg-gradient-to-l from-amber-300 via-yellow-200 to-cyan-300 bg-clip-text text-transparent">
+                  دانشمند کوچولو
+                </h1>
+                <span className="hidden md:inline-block px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[10px] font-black text-amber-300">
+                  v2.0 سخنگو
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 font-bold hidden sm:block">
+                {progress.childName} — {scientistRank}
               </p>
             </div>
-          </button>
-
-          {screen !== 'home' && (
-            <div className="flex items-center gap-1.5 mr-2">
-              <button
-                type="button"
-                onClick={() => {
-                  soundEngine.playPop(500);
-                  setScreen('home');
-                }}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold border border-white/10"
-              >
-                <Home className="w-4 h-4 text-amber-400" />
-                خانه
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  soundEngine.playPop(540);
-                  setScreen('map');
-                }}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold border border-white/10"
-              >
-                <Grid className="w-4 h-4 text-cyan-400" />
-                مراحل ۹۰گانه
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Right Controls: Stars, Sound, Fullscreen, Update/Parent Center */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-amber-400/15 border border-amber-400/40 text-amber-300 font-black text-xs sm:text-sm">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <span>{totalStars}</span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => updateProgress({ soundEnabled: !progress.soundEnabled })}
-            className={`p-2 rounded-xl border transition ${
-              progress.soundEnabled
-                ? 'bg-slate-800 border-white/15 text-emerald-300'
-                : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
-            }`}
-            title="قطع / وصل صدا"
-          >
-            {progress.soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-sky-300 transition hidden sm:flex"
-            title="تمام‌صفحه"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-
-          {!window.desktopAPI && (
-            <a
-              href="https://github.com/saeedsly/azmaeshkocholo/releases/latest"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg transition"
-              title="دانلود مستقیم نسخه نصبی و پرتابل ویندوز (.EXE)"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">دانلود ویندوز (.EXE)</span>
-            </a>
-          )}
-
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop(660);
-              setParentModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-950 font-black text-xs shadow-lg transition"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>آپدیت و والدین</span>
-            <Settings className="w-3.5 h-3.5 hidden sm:inline" />
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col">
-        {/* ==================== SCREEN 1: HOME LOBBY ==================== */}
-        {screen === 'home' && (
-          <div className="space-y-7 my-auto">
-            {/* Hero Welcome Banner */}
-            <div className="relative rounded-3xl overflow-hidden border-2 border-amber-400/40 bg-gradient-to-l from-indigo-900/80 via-slate-900/95 to-cyan-950/80 p-5 sm:p-7 shadow-2xl flex flex-col md:flex-row items-center gap-6">
-              <img
-                src="./assets/mascot.jpg"
-                alt="پروفسور کوچولو"
-                className="w-36 h-36 sm:w-44 sm:h-44 object-cover rounded-3xl border-4 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.35)] shrink-0 animate-float"
-              />
-              <div className="space-y-3 text-center md:text-right flex-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-300 text-xs font-black">
-                  <Sparkles className="w-4 h-4" />
-                  <span>مجموعه کامل ۲۷۰ مرحله‌ای ویژه کودک (با قابلیت افزودن مرحله جدید!)</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white leading-snug">
-                  سلام {progress.childName} قهرمان! به آزمایشگاه بزرگت خوش اومدی! 🔬
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-                  امروز می‌خوای کدوم آزمایش رو انجام بدیم؟ آرمیچر و باتری و کلید و پریز ببندیم، فواره نوشابه و نمک درست کنیم، یا با آهنربای جادویی آهن‌ها رو شکار کنیم؟
-                </p>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-1">
-                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs font-bold text-emerald-300">
-                    <Award className="w-4 h-4" />
-                    <span>مراحل حل‌شده: {totalCompletedCount} از {allLevels.length}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => soundEngine.speakPersian(`سلام ${progress.childName} عزیز! بیا یکی از سه تا آزمایشگاه رو انتخاب کن تا بازی رو شروع کنیم!`)}
-                    className="px-3.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/40 text-cyan-200 text-xs font-black transition"
-                  >
-                    🔊 شنیدن خوش‌آمدگویی صوتی
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 3 World Portal Cards (90 Levels Each!) */}
-            <div className="grid md:grid-cols-3 gap-5">
-              {LAB_CARDS.map((card) => {
-                const levelsOfCard = allLevels.filter((l) => l.lab === card.id);
-                const doneCount = levelsOfCard.filter((l) => progress.completedIds[l.id]).length;
-                const pct = Math.round((doneCount / Math.max(1, levelsOfCard.length)) * 100);
-
-                return (
-                  <div
-                    key={card.id}
-                    className={`group rounded-3xl border-2 ${card.border} bg-gradient-to-b ${card.gradient} overflow-hidden shadow-2xl flex flex-col justify-between transition transform hover:-translate-y-1.5`}
-                  >
-                    <div>
-                      <div className="relative h-44 overflow-hidden">
-                        <img
-                          src={card.image}
-                          alt={card.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-                        <span className="absolute top-3 right-3 px-3 py-1 rounded-full bg-slate-950/85 border border-amber-300/50 text-amber-300 text-xs font-black">
-                          {levelsOfCard.length} قسمت کامل
-                        </span>
-                      </div>
-
-                      <div className="p-5 space-y-2.5">
-                        <h3 className="text-xl font-black text-white">{card.title}</h3>
-                        <p className="text-xs text-slate-300 leading-relaxed min-h-[52px]">
-                          {card.subtitle}
-                        </p>
-
-                        {/* Progress Bar */}
-                        <div className="pt-1">
-                          <div className="flex justify-between text-[11px] font-bold text-slate-300 mb-1">
-                            <span>پیشرفت قهرمان</span>
-                            <span>
-                              {doneCount} / {levelsOfCard.length} ({pct}%)
-                            </span>
-                          </div>
-                          <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
-                            <div
-                              style={{ width: `${pct}%` }}
-                              className="h-full bg-gradient-to-l from-amber-400 to-emerald-400 transition-all duration-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="px-5 pb-5 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openLabPortal(card.id, true)}
-                        className="flex-1 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm shadow-lg transition transform active:scale-95"
-                      >
-                        شروع بازی ▶
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openLabPortal(card.id, false)}
-                        className="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-white/15 transition"
-                      >
-                        ۹۰ مرحله
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ==================== SCREEN 2: 90-LEVEL CHAPTER MAP ==================== */}
-        {screen === 'map' && (
-          <div className="space-y-5">
-            {/* Lab Switcher Pills */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 border border-white/10 rounded-3xl p-4">
-              <div className="flex flex-wrap gap-2">
-                {LAB_CARDS.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => {
-                      soundEngine.playPop(560);
-                      setActiveLab(c.id);
-                      setSelectedChapter(1);
-                    }}
-                    className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-black transition ${
-                      activeLab === c.id
-                        ? 'bg-amber-400 text-slate-950 shadow-lg'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-                    }`}
-                  >
-                    {c.title}
-                  </button>
-                ))}
-              </div>
-              <span className="text-xs text-amber-300 font-bold">
-                مجموع مراحل این بخش: {labLevels.length} مرحله (همه باز و قابل انتخاب!)
+          {/* Action Controls & Creator Badge */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Stars Counter */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-400/15 border border-amber-400/40 shadow-inner">
+              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span className="text-xs sm:text-sm font-black text-amber-300">
+                {totalStars}
               </span>
             </div>
 
-            {/* 9 Chapters Selector */}
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((ch) => {
-                const chLevels = labLevels.filter((l) => l.chapter === ch);
-                const chDone = chLevels.filter((l) => progress.completedIds[l.id]).length;
-                return (
+            {view !== 'home' && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.stopSpeech();
+                  soundEngine.playPop(500);
+                  setView('home');
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs sm:text-sm font-black transition"
+              >
+                <Home className="w-4 h-4 text-amber-300" />
+                <span className="hidden sm:inline">خانه</span>
+              </button>
+            )}
+
+            {view === 'play' && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.stopSpeech();
+                  soundEngine.playPop(520);
+                  setView('map');
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-xs sm:text-sm font-black transition"
+              >
+                <Grid className="w-4 h-4 text-cyan-300" />
+                <span className="hidden sm:inline">نقشه ۹۰ مرحله</span>
+              </button>
+            )}
+
+            {/* Sound & Voice Quick Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = !progress.soundEnabled;
+                if (!next) soundEngine.stopSpeech();
+                updateProgress({ soundEnabled: next, voiceEnabled: next });
+              }}
+              className={`p-2 rounded-2xl border transition ${
+                progress.soundEnabled
+                  ? 'bg-emerald-500/20 border-emerald-400/45 text-emerald-300'
+                  : 'bg-slate-800 border-white/10 text-slate-400'
+              }`}
+              title="قطع / وصل صدای گوینده و افکت‌ها"
+            >
+              {progress.soundEnabled ? (
+                <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              ) : (
+                <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />
+              )}
+            </button>
+
+            {isDesktopApp && (
+              <button
+                type="button"
+                onClick={() => window.desktopAPI?.toggleFullscreen()}
+                className="p-2 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-cyan-300 transition"
+                title="تمام‌صفحه"
+              >
+                <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            )}
+
+            {/* Dedicated Developer / Programmer Showcase Button */}
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playPop(660);
+                setCreatorModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-gradient-to-l from-amber-400/25 to-yellow-500/20 hover:from-amber-400/40 hover:to-yellow-500/35 border border-amber-300/60 text-xs sm:text-sm font-black text-amber-200 shadow-lg transition"
+              title="درباره برنامه‌نویس و سازنده اپلیکیشن"
+            >
+              <Code2 className="w-4 h-4 text-amber-300" />
+              <span className="hidden md:inline">سازنده اپ</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playPop(600);
+                setParentModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border border-white/25 text-xs sm:text-sm font-black shadow-lg transition"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden lg:inline">آپدیت و والدین</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Body */}
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-5 flex flex-col gap-6">
+        {/* ================= HOME SCREEN ================= */}
+        {view === 'home' && (
+          <>
+            {/* Hero Kid Scientist Banner */}
+            <section className="relative rounded-[2.2rem] overflow-hidden border-2 border-amber-400/50 bg-gradient-to-l from-indigo-950/95 via-slate-900/95 to-purple-950/95 shadow-[0_25px_70px_rgba(0,0,0,0.55)] p-5 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="space-y-4 max-w-xl z-10">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400/20 border border-amber-400/45 text-amber-300 text-xs font-black">
+                  <Sparkles className="w-4 h-4" />
+                  <span>نسخه ۲.۰ اولترا پرو با گوینده فارسی قدم‌به‌قدم و قصه‌گوی علمی!</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black leading-tight text-white">
+                  سلام {progress.childName}! 👋
+                  <br />
+                  <span className="text-amber-300">
+                    امروز کدوم آزمایش شگفت‌انگیز رو انجام بدیم؟
+                  </span>
+                </h2>
+                <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
+                  فقط روی هر آزمایشگاه بزن! گوینده مهربون فارسی قدم‌به‌قدم بهت می‌گه چیکار کنی و بعد از هر آزمایش هم راز علمی اون رو برات تعریف می‌کنه!
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 pt-1">
                   <button
-                    key={ch}
                     type="button"
-                    onClick={() => {
-                      soundEngine.playPop(500 + ch * 25);
-                      setSelectedChapter(ch);
-                    }}
-                    className={`px-3.5 py-2 rounded-2xl border text-xs font-black transition flex items-center gap-1.5 ${
-                      selectedChapter === ch
-                        ? 'bg-cyan-400 text-slate-950 border-white shadow-lg scale-105'
-                        : 'bg-slate-900/90 hover:bg-slate-800 text-slate-200 border-white/10'
+                    onClick={() => soundEngine.speakClipKey('welcome_home')}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm border-b-4 border-amber-600 shadow-xl transition transform hover:scale-105 ${
+                      isSpeakingNow ? 'ring-4 ring-emerald-400' : ''
                     }`}
                   >
-                    <span>فصل {ch}</span>
-                    <span className="text-[10px] opacity-80">
-                      ({chDone}/{chLevels.length})
-                    </span>
+                    <Volume2 className={`w-5 h-5 ${isSpeakingNow ? 'animate-bounce' : ''}`} />
+                    {isSpeakingNow ? 'در حال صحبت با دانشمند کوچولو...' : 'پخش خوش‌آمدگویی صوتی 🔊'}
                   </button>
+
+                  {!isDesktopApp && (
+                    <a
+                      href="https://github.com/saeedsly/azmaeshkocholo/releases/download/v2.0.0/Daneshmand-Kocholo-Portable-2.0.0.exe"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-l from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-black text-sm border-b-4 border-emerald-700 shadow-xl transition transform hover:scale-105"
+                    >
+                      <Download className="w-5 h-5" />
+                      دانلود مستقیم ویندوز (.EXE نسخه ۲.۰)
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className="relative z-10 shrink-0">
+                <div className="absolute -inset-4 bg-amber-400/25 rounded-full blur-2xl animate-pulse pointer-events-none" />
+                <img
+                  src="./assets/hero-kid-scientist.png"
+                  alt="دانشمند کوچولو"
+                  className="relative w-48 h-48 sm:w-60 sm:h-60 object-cover rounded-[2rem] border-4 border-amber-300 shadow-2xl"
+                />
+              </div>
+            </section>
+
+            {/* 3 World Portals (90 Levels Each) */}
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {(['electric', 'chemistry', 'physics'] as LabId[]).map((labId) => {
+                const meta = LAB_META[labId];
+                const totalInLab = levelsByLab[labId].length;
+                const doneInLab = completedCountForLab(labId);
+                const pct = Math.round((doneInLab / Math.max(1, totalInLab)) * 100);
+
+                return (
+                  <div
+                    key={labId}
+                    onClick={() => handleOpenLabPlay(labId)}
+                    className={`cursor-pointer group rounded-[2rem] border-2 ${meta.border} bg-gradient-to-b ${meta.gradient} backdrop-blur-md p-5 shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col justify-between gap-4`}
+                  >
+                    <div className="space-y-3.5">
+                      <div className="relative h-46 rounded-2xl overflow-hidden border border-white/15">
+                        <img
+                          src={meta.bannerImg}
+                          alt={meta.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <span className="absolute top-3 right-3 px-3 py-1 rounded-full bg-slate-950/85 border border-white/20 text-xs font-black text-amber-300 shadow">
+                          {meta.badgeText}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            soundEngine.speakClipKey(meta.introClip);
+                          }}
+                          className="absolute bottom-3 left-3 p-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-lg transition transform hover:scale-110"
+                          title="شنیدن معرفی صوتی بخش"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <h3 className="text-xl sm:text-2xl font-black text-white">
+                        {meta.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                        {meta.subtitle}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3 pt-2">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs font-bold">
+                          <span className={meta.accentText}>پیشرفت آزمایش‌ها</span>
+                          <span className="text-white">
+                            {doneInLab} از {totalInLab} مرحله ({pct}%)
+                          </span>
+                        </div>
+                        <div className="w-full h-3 rounded-full bg-slate-950/90 overflow-hidden p-0.5 border border-white/10">
+                          <div
+                            style={{ width: `${Math.max(4, pct)}%` }}
+                            className="h-full rounded-full bg-gradient-to-l from-amber-400 to-emerald-400 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenLabPlay(labId);
+                          }}
+                          className="flex-1 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm border-b-4 border-amber-600 shadow-lg transition"
+                        >
+                          شروع بازی و آزمایش ▶
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            soundEngine.playPop(540);
+                            setActiveLab(labId);
+                            setView('map');
+                          }}
+                          className="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-white/15 transition"
+                        >
+                          ۹۰ مرحله
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </div>
+            </section>
 
-            {/* Chapter Title Banner */}
-            <div className="px-5 py-3 rounded-2xl bg-indigo-950/70 border border-indigo-400/30 flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-black text-amber-300">
-                {labLevels.find((l) => l.chapter === selectedChapter)?.chapterTitle ||
-                  `فصل ${selectedChapter}`}
-              </h3>
-              <span className="text-xs text-slate-300">روی هر شماره کلیک کن تا وارد آزمایشگاه بشوی!</span>
-            </div>
-
-            {/* Stages Grid for Selected Chapter */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-              {labLevels
-                .filter((l) => l.chapter === selectedChapter)
-                .map((lvl) => {
-                  const stars = progress.completedIds[lvl.id] || 0;
-                  return (
-                    <button
-                      key={lvl.id}
-                      type="button"
-                      onClick={() => {
-                        soundEngine.playPop(640);
-                        setActiveLevelId(lvl.id);
-                        setScreen('play');
-                      }}
-                      className={`group p-4 rounded-3xl border-2 text-right flex flex-col justify-between gap-3 transition transform hover:-translate-y-1 shadow-xl ${
-                        stars > 0
-                          ? 'bg-emerald-950/60 border-emerald-400/60 hover:border-emerald-300'
-                          : 'bg-slate-900/90 border-white/15 hover:border-amber-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 font-black text-base flex items-center justify-center shadow">
-                          {lvl.number}
-                        </span>
-                        <div className="flex gap-0.5">
-                          {[1, 2, 3].map((s) => (
-                            <Star
-                              key={s}
-                              className={`w-4 h-4 ${
-                                stars >= s
-                                  ? 'fill-amber-400 text-amber-400'
-                                  : 'text-slate-700'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="text-xs sm:text-sm font-black text-white leading-snug line-clamp-2">
-                          {lvl.title}
-                        </div>
-                        {lvl.isCustomOrUpdate && (
-                          <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-fuchsia-500/30 text-fuchsia-200 text-[10px] font-bold">
-                            ✨ مرحله آپدیت‌شده
-                          </span>
-                        )}
-                      </div>
-
-                      <span className="text-[11px] font-black text-amber-300 group-hover:translate-x-[-4px] transition">
-                        ورود به آزمایش ◀
-                      </span>
-                    </button>
-                  );
-                })}
-            </div>
-          </div>
-        )}
-
-        {/* ==================== SCREEN 3: ACTIVE LABORATORY WORKBENCH ==================== */}
-        {screen === 'play' && currentLevel && (
-          <div className="space-y-3.5">
-            {/* Level Header + Mascot Voice Guidance */}
-            <div className="bg-slate-900/90 border-2 border-white/15 rounded-3xl p-3.5 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl">
-              <div className="flex items-center gap-3.5 w-full md:w-auto">
-                <img
-                  src="./assets/mascot.jpg"
-                  alt="دانشمند کوچولو"
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-amber-400 shrink-0"
-                />
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-xs font-black">
-                      مرحله {currentLevel.number} از {labLevels.length}
-                    </span>
-                    <span className="text-xs font-bold text-cyan-300">
-                      {currentLevel.chapterTitle}
-                    </span>
+            {/* ================= DEDICATED DEVELOPER / PROGRAMMER SIGNATURE CARD ================= */}
+            <section className="relative rounded-[2rem] overflow-hidden border-2 border-amber-400/55 bg-gradient-to-l from-slate-900/95 via-indigo-950/90 to-slate-900/95 p-5 sm:p-6 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-5">
+              <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-right">
+                <div className="w-20 h-20 rounded-3xl overflow-hidden border-3 border-amber-300 bg-gradient-to-br from-amber-400/30 to-indigo-600/40 flex items-center justify-center shadow-[0_0_30px_rgba(251,191,36,0.3)] shrink-0">
+                  {progress.creatorPhotoDataUrl ? (
+                    <img
+                      src={progress.creatorPhotoDataUrl}
+                      alt={progress.creatorName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-4xl">👨‍💻</span>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[11px] font-black text-amber-300">
+                    <Award className="w-3.5 h-3.5" />
+                    <span>بخش ویژه طراح و برنامه‌نویس اپلیکیشن</span>
                   </div>
-                  <h2 className="text-base sm:text-lg font-black text-white">
-                    {currentLevel.title}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-amber-100 font-medium leading-relaxed">
-                    {currentLevel.kidPrompt}
+                  <h3 className="text-lg sm:text-xl font-black text-white">
+                    برنامه‌نویسی و توسعه توسط:{' '}
+                    <span className="text-amber-300">
+                      {progress.creatorName || 'مهندس سعید سالاری (Saeed Salari)'}
+                    </span>
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                    «{progress.creatorDedication || DEFAULT_PROGRESS.creatorDedication}»
                   </p>
                 </div>
               </div>
 
-              {/* Voice Readout + Prev/Next Stage Quick Navigation */}
-              <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+              <div className="flex flex-wrap items-center justify-center gap-2.5 shrink-0">
                 <button
                   type="button"
-                  onClick={() => soundEngine.speakPersian(currentLevel.kidPrompt)}
-                  className="px-3.5 py-2 rounded-2xl bg-cyan-500/25 hover:bg-cyan-500/40 border border-cyan-400/50 text-cyan-200 text-xs font-black transition"
-                  title="پخش صوتی راهنمای مرحله"
+                  onClick={() => soundEngine.speakClipKey('creator_tribute')}
+                  className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm border-b-4 border-amber-600 shadow-lg transition"
                 >
-                  🔊 راهنمای صوتی
+                  <Volume2 className="w-4 h-4" />
+                  معرفی صوتی سازنده اپ
                 </button>
                 <button
                   type="button"
-                  onClick={handleGoPrevLevel}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-white"
-                  title="مرحله قبلی"
+                  onClick={() => setCreatorModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-amber-300/40 text-amber-200 font-black text-xs sm:text-sm transition"
+                >
+                  <Code2 className="w-4 h-4" />
+                  مشاهده پروفایل و ویرایش مشخصات سازنده
+                </button>
+              </div>
+            </section>
+
+            {/* Direct Windows .EXE v2.0 Download Bar */}
+            {!isDesktopApp && (
+              <section className="rounded-3xl border border-emerald-400/40 bg-slate-900/90 p-5 flex flex-col lg:flex-row items-center justify-between gap-4 shadow-xl">
+                <div className="space-y-1 text-center lg:text-right">
+                  <h3 className="text-base sm:text-lg font-black text-emerald-300 flex items-center justify-center lg:justify-start gap-2">
+                    <Download className="w-5 h-5" />
+                    دانلود مستقیم نرم‌افزار ویندوز «دانشمند کوچولو» — نسخه ۲.۰ سخنگو (.EXE)
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    شامل تمام ۲۷۰ مرحله + صدای فارسی داخلی (بدون نیاز به نصب صدای فارسی روی ویندوز!) — قابل اجرا روی ویندوز ۱۰ و ۱۱:
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2.5 shrink-0">
+                  <a
+                    href="https://github.com/saeedsly/azmaeshkocholo/releases/download/v2.0.0/Daneshmand-Kocholo-Portable-2.0.0.exe"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2.5 rounded-2xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs sm:text-sm border-b-4 border-emerald-600 shadow-lg transition"
+                  >
+                    ⚡ دانلود نسخه بدون نصب (Portable v2.0.0 .EXE)
+                  </a>
+                  <a
+                    href="https://github.com/saeedsly/azmaeshkocholo/releases/download/v2.0.0/Daneshmand-Kocholo-Setup-2.0.0.exe"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2.5 rounded-2xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs sm:text-sm border-b-4 border-cyan-600 shadow-lg transition"
+                  >
+                    💿 دانلود فایل نصبی ویندوز (Setup v2.0.0 .EXE)
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setParentModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/15 text-amber-300 font-bold text-xs transition"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    بروزرسانی مراحل
+                  </button>
+                </div>
+              </section>
+            )}
+          </>
+        )}
+
+        {/* ================= 90-LEVEL MAP SCREEN ================= */}
+        {view === 'map' && (
+          <section className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-white/15 rounded-3xl p-4 shadow-xl">
+              <div className="flex flex-wrap items-center gap-2">
+                {(['electric', 'chemistry', 'physics'] as LabId[]).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      soundEngine.playPop(540);
+                      setActiveLab(id);
+                    }}
+                    className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition ${
+                      activeLab === id
+                        ? 'bg-amber-400 text-slate-950 shadow-lg'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                    }`}
+                  >
+                    {LAB_META[id].title} ({levelsByLab[id].length})
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-xs sm:text-sm font-bold text-emerald-300 flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                <span>
+                  تکمیل شده: {completedCountForLab(activeLab)} از {levelsByLab[activeLab].length} مرحله
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-9 gap-3">
+              {levelsByLab[activeLab].map((lvl) => {
+                const isDone = Boolean(progress.completedIds[lvl.id]);
+                const isCurrent = lvl.id === activeLevelId;
+                return (
+                  <button
+                    key={lvl.id}
+                    type="button"
+                    onClick={() => handleOpenLabPlay(activeLab, lvl.id)}
+                    className={`group relative rounded-2xl p-3 border-2 flex flex-col items-center justify-between gap-1.5 text-center transition transform hover:-translate-y-1 ${
+                      isDone
+                        ? 'bg-emerald-950/75 border-emerald-400/70 shadow-lg'
+                        : isCurrent
+                        ? 'bg-amber-400/25 border-amber-300 ring-2 ring-amber-300/50'
+                        : 'bg-slate-900/85 hover:bg-slate-800 border-white/15'
+                    }`}
+                  >
+                    <span className="text-[10px] font-bold text-slate-400">
+                      فصل {lvl.chapter}
+                    </span>
+                    <span className="text-2xl font-black text-white">{lvl.number}</span>
+                    <span className="text-[11px] font-bold text-slate-200 line-clamp-1">
+                      {lvl.title}
+                    </span>
+                    <div className="flex gap-0.5 mt-0.5">
+                      {[1, 2, 3].map((s) => (
+                        <Star
+                          key={s}
+                          className={`w-3.5 h-3.5 ${
+                            isDone
+                              ? 'text-amber-400 fill-amber-400'
+                              : 'text-slate-600'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ================= ACTIVE EXPERIMENT PLAYGROUND ================= */}
+        {view === 'play' && activeLevel && (
+          <section className="space-y-4">
+            {/* Level Header & Live Talking Mascot Card */}
+            <div className="bg-slate-900/92 border-2 border-white/15 rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 shadow-2xl">
+              <div className="flex items-center gap-3.5 w-full md:w-auto">
+                {/* Animated Talking Scientist Avatar */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (progress.completedIds[activeLevel.id]) {
+                      const winStory = getWinExplanationForLevel(activeLevel);
+                      soundEngine.speakPersian(winStory.fullText, winStory.clipKey);
+                    } else {
+                      soundEngine.speakClipKey(getStartClipForLevel(activeLevel));
+                    }
+                  }}
+                  className={`shrink-0 relative w-14 h-14 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 flex flex-col items-center justify-center shadow-lg border-b-4 border-amber-600 transition transform hover:scale-105 ${
+                    isSpeakingNow ? 'ring-4 ring-emerald-400 animate-pulse' : ''
+                  }`}
+                  title="پخش راهنمای صوتی مرحله"
+                >
+                  <Volume2 className="w-6 h-6" />
+                  <span className="text-[9px] font-black mt-0.5">راهنما</span>
+                </button>
+
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[11px] font-black text-amber-300">
+                      مرحله {activeLevel.number} از {levelsByLab[activeLevel.lab].length} — {activeLevel.chapterTitle}
+                    </span>
+                    {progress.completedIds[activeLevel.id] && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/40 text-[11px] font-black text-emerald-300">
+                        تکمیل شده ⭐⭐⭐
+                      </span>
+                    )}
+                    {isSpeakingNow && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 text-[10px] font-black animate-pulse">
+                        🎙️ گوینده در حال توضیح دادن...
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-lg sm:text-2xl font-black text-white mt-0.5">
+                    {activeLevel.title}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-amber-200 font-bold">
+                    {activeLevel.kidPrompt}
+                  </p>
+                </div>
+              </div>
+
+              {/* Prev / Next Level Quick Switcher */}
+              <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                <button
+                  type="button"
+                  onClick={handlePrevLevel}
+                  disabled={activeLevel.number <= 1}
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 border border-white/15 text-xs font-bold transition"
                 >
                   <ChevronRight className="w-4 h-4" />
+                  قبلی
                 </button>
                 <button
                   type="button"
-                  onClick={handleGoNextLevel}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-white"
-                  title="مرحله بعدی"
+                  onClick={handleNextLevel}
+                  className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-emerald-500/25 hover:bg-emerald-500/40 border border-emerald-400/50 text-emerald-200 text-xs font-black transition"
                 >
+                  مرحله بعد
                   <ChevronLeft className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Render Dedicated Interactive Lab Engine */}
-            {currentLevel.lab === 'electric' && (
+            {/* Active Lab Interactive Engine */}
+            {activeLevel.lab === 'electric' && (
               <ElectricLab
-                level={currentLevel as ElectricLevel}
-                onComplete={handleCompleteCurrentLevel}
-                onNextLevel={handleGoNextLevel}
+                level={activeLevel as ElectricLevel}
+                onComplete={handleLevelComplete}
+                onNextLevel={handleNextLevel}
               />
             )}
-
-            {currentLevel.lab === 'chemistry' && (
+            {activeLevel.lab === 'chemistry' && (
               <ChemistryLab
-                level={currentLevel as ChemistryLevel}
-                onComplete={handleCompleteCurrentLevel}
-                onNextLevel={handleGoNextLevel}
+                level={activeLevel as ChemistryLevel}
+                onComplete={handleLevelComplete}
+                onNextLevel={handleNextLevel}
               />
             )}
-
-            {currentLevel.lab === 'physics' && (
+            {activeLevel.lab === 'physics' && (
               <PhysicsLab
-                level={currentLevel as PhysicsLevel}
-                onComplete={handleCompleteCurrentLevel}
-                onNextLevel={handleGoNextLevel}
+                level={activeLevel as PhysicsLevel}
+                onComplete={handleLevelComplete}
+                onNextLevel={handleNextLevel}
               />
             )}
-          </div>
+          </section>
         )}
       </main>
 
-      {/* Parent Settings, Online Level Updater & Level Builder Modal */}
+      {/* Footer Signature */}
+      <footer className="relative z-10 border-t border-white/10 bg-slate-950/75 py-3 px-6 text-center text-xs text-slate-400 flex flex-wrap items-center justify-center gap-3">
+        <span>
+          🔬 دانشمند کوچولو (نسخه ۲.۰ اولترا پرو) — طراحی و برنامه‌نویسی توسط{' '}
+          <button
+            type="button"
+            onClick={() => setCreatorModalOpen(true)}
+            className="text-amber-300 hover:text-amber-200 font-black underline underline-offset-4"
+          >
+            {progress.creatorName || 'مهندس سعید سالاری'}
+          </button>
+        </span>
+      </footer>
+
+      {/* Dedicated Developer / Creator Showcase Modal */}
+      <CreatorShowcaseModal
+        isOpen={creatorModalOpen}
+        onClose={() => setCreatorModalOpen(false)}
+        progress={progress}
+        onUpdateProgress={updateProgress}
+      />
+
+      {/* Parent & Online Level Update Modal */}
       <UpdateAndParentModal
         isOpen={parentModalOpen}
         onClose={() => setParentModalOpen(false)}
@@ -723,14 +926,9 @@ export const App: React.FC = () => {
         customLevels={customLevels}
         onAddLevels={handleAddLevels}
         allLevels={allLevels}
-        onJumpToLevel={(lab, levelId) => {
-          setActiveLab(lab);
-          setActiveLevelId(levelId);
-          setScreen('play');
-        }}
+        onJumpToLevel={(lab, lvlId) => handleOpenLabPlay(lab, lvlId)}
       />
     </div>
   );
-};
-
+}
 export default App;

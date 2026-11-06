@@ -2,12 +2,21 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const crypto = require('crypto');
 
 let autoUpdater = null;
 try {
   ({ autoUpdater } = require('electron-updater'));
 } catch {
   // Optional in unpacked dev environments
+}
+
+let MsEdgeTTS = null;
+let OUTPUT_FORMAT = null;
+try {
+  ({ MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts'));
+} catch (err) {
+  console.warn('msedge-tts optional module:', err?.message);
 }
 
 let mainWindow = null;
@@ -40,7 +49,7 @@ function writeJsonSafe(filePath, data) {
 function fetchHttpsJson(url) {
   return new Promise((resolve, reject) => {
     https
-      .get(url, { headers: { 'User-Agent': 'DaneshmandKocholo-Updater/1.0' } }, (res) => {
+      .get(url, { headers: { 'User-Agent': 'DaneshmandKocholo-Updater/2.0' } }, (res) => {
         if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
           return resolve(fetchHttpsJson(res.headers.location));
         }
@@ -67,13 +76,13 @@ function createWindow() {
   const iconPath = app.isPackaged && fs.existsSync(unpackedIcon) ? unpackedIcon : devIcon;
 
   mainWindow = new BrowserWindow({
-    width: 1380,
-    height: 860,
-    minWidth: 980,
-    minHeight: 660,
-    title: 'دانشمند کوچولو | آزمایشگاه برق، شیمی و علوم',
+    width: 1420,
+    height: 890,
+    minWidth: 1000,
+    minHeight: 680,
+    title: 'دانشمند کوچولو | نسخه فوق‌حرفه‌ای سخنگو — طراحی و ساخت: مهندس سعید سالاری',
     icon: iconPath,
-    backgroundColor: '#090d1e',
+    backgroundColor: '#070b19',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -112,6 +121,62 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+// Neural Persian TTS Synthesizer with Persistent Disk Cache!
+ipcMain.handle('desktop:synthesizePersian', async (_event, text, voiceName = 'fa-IR-DilaraNeural') => {
+  if (!text || typeof text !== 'string') return null;
+  const cacheDir = path.join(app.getPath('userData'), 'persian-tts-cache');
+  fs.mkdirSync(cacheDir, { recursive: true });
+  const hash = crypto.createHash('sha1').update(`${voiceName}::${text}`).digest('hex');
+  const cachedMp3 = path.join(cacheDir, `${hash}.mp3`);
+
+  try {
+    if (fs.existsSync(cachedMp3) && fs.statSync(cachedMp3).size > 400) {
+      const b64 = fs.readFileSync(cachedMp3).toString('base64');
+      return `data:audio/mpeg;base64,${b64}`;
+    }
+
+    // Primary: edge-tts-universal (modern Sec-MS-GEC DRM token + Origin header)
+    try {
+      const { EdgeTTS } = require('edge-tts-universal');
+      const uTts = new EdgeTTS(text, voiceName, { rate: '-4%', pitch: '+3Hz' });
+      const res = await uTts.synthesize();
+      const arrBuf = await res.audio.arrayBuffer();
+      const buf = Buffer.from(arrBuf);
+      if (buf.length > 400) {
+        fs.writeFileSync(cachedMp3, buf);
+        return `data:audio/mpeg;base64,${buf.toString('base64')}`;
+      }
+    } catch (uErr) {
+      console.warn('edge-tts-universal fallback:', uErr?.message);
+    }
+
+    if (!MsEdgeTTS || !OUTPUT_FORMAT) return null;
+
+    const tts = new MsEdgeTTS({ connectionTimeoutMs: 6000, synthesisTimeoutMs: 12000 });
+    await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+
+    const { audioStream } = tts.toStream(text, { rate: '-4%', pitch: '+3Hz' });
+    const chunks = [];
+    await new Promise((resolve, reject) => {
+      audioStream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      audioStream.on('end', resolve);
+      audioStream.on('close', resolve);
+      audioStream.on('error', reject);
+    });
+    tts.close();
+
+    const fullBuffer = Buffer.concat(chunks);
+    if (fullBuffer.length > 400) {
+      fs.writeFileSync(cachedMp3, fullBuffer);
+      return `data:audio/mpeg;base64,${fullBuffer.toString('base64')}`;
+    }
+    return null;
+  } catch (err) {
+    console.warn('Neural TTS fallback triggered:', err?.message);
+    return null;
+  }
 });
 
 // IPC Handlers for Persistent Progress, Custom Level Packs & Online Updates

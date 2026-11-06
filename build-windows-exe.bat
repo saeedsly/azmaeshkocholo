@@ -20,7 +20,10 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [2/3] در حال کامپایل گرافیک و موتور بازی...
+echo [2/4] در حال ساخت فایل‌های صوتی گوینده فارسی (۷۲ فایل MP3)...
+call node scripts/generate_offline_voices.mjs
+
+echo [3/4] در حال کامپایل گرافیک و موتور بازی (نسخه ۲.۰.۰)...
 call npm run dist:win
 if %errorlevel% neq 0 (
     echo [خطا] ساخت فایل EXE با مشکل مواجه شد.

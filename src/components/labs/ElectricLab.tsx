@@ -10,12 +10,14 @@ import {
   PART_NAMES_FA,
   APPLIANCE_META,
 } from './ElectricPartsArt';
+import { VictoryStoryBanner } from '../VictoryStoryBanner';
+import { getPartVoiceClipKey } from '../../utils/kidExplanations';
 import { soundEngine } from '../../utils/soundEngine';
-import { Lightbulb, RotateCcw, Sparkles, Zap, Plug, AlertTriangle } from 'lucide-react';
+import { Lightbulb, RotateCcw, Sparkles, Zap, Plug, AlertTriangle, Volume2 } from 'lucide-react';
 
 interface WireEdge {
   id: string;
-  fromNode: string; // `${slotId}:${termId}`
+  fromNode: string;
   toNode: string;
   color: string;
 }
@@ -107,7 +109,7 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
   const [dimmerMap, setDimmerMap] = useState<Record<string, number>>({});
   const [nightMap, setNightMap] = useState<Record<string, boolean>>({});
   const [pluggedIn, setPluggedIn] = useState<boolean>(false);
-  const [showHint, setShowHint] = useState<boolean>(false);
+  const [showHint, setShowHint] = useState<boolean>(true);
   const [completedOnce, setCompletedOnce] = useState<boolean>(false);
 
   useEffect(() => {
@@ -142,7 +144,7 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
     setDimmerMap(initDim);
     setNightMap(initNight);
     setPluggedIn(false);
-    setShowHint(level.number <= 3); // Auto visual guide on first 3 levels for 4yo!
+    setShowHint(level.number <= 10);
     setCompletedOnce(false);
   }, [level]);
 
@@ -165,7 +167,6 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
     return map;
   }, [level]);
 
-  // Real DFS Simple-Path Circuit Solver
   const simulation = useMemo(() => {
     const poweredLoads = new Set<string>();
     const activeWires = new Set<string>();
@@ -314,9 +315,9 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
       else if (hasMotor) soundEngine.playMotorWhir();
 
       confetti({
-        particleCount: 110,
-        spread: 85,
-        origin: { y: 0.6 },
+        particleCount: 120,
+        spread: 90,
+        origin: { y: 0.58 },
       });
       onComplete();
     }
@@ -325,13 +326,40 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
   useEffect(() => {
     if (simulation.shortCircuit) {
       soundEngine.playShortCircuitWarning();
+      soundEngine.speakClipKey('elec_short_circuit');
     }
   }, [simulation.shortCircuit]);
+
+  const unplacedSlots = level.slots.filter((s) => !placedSlots[s.slotId]);
+
+  const nextHintWire = useMemo(() => {
+    for (const hw of level.hintWires) {
+      if (!placedSlots[hw.fromSlot] || !placedSlots[hw.toSlot]) continue;
+      const n1 = `${hw.fromSlot}:${hw.fromTerm}`;
+      const n2 = `${hw.toSlot}:${hw.toTerm}`;
+      const found = wires.some(
+        (w) =>
+          (w.fromNode === n1 && w.toNode === n2) ||
+          (w.fromNode === n2 && w.toNode === n1)
+      );
+      if (!found) return { n1, n2, color: hw.wireColor || '#ef4444' };
+    }
+    return null;
+  }, [level.hintWires, wires, placedSlots]);
 
   const placeSlotPart = (slot: ElectricSlotSpec) => {
     if (placedSlots[slot.slotId]) return;
     soundEngine.playSnap();
-    setPlacedSlots((prev) => ({ ...prev, [slot.slotId]: true }));
+    const nextPlaced = { ...placedSlots, [slot.slotId]: true };
+    setPlacedSlots(nextPlaced);
+
+    const remaining = level.slots.filter((s) => !nextPlaced[s.slotId]);
+    if (remaining.length === 0) {
+      // All parts placed! Guide child by voice to wire them!
+      soundEngine.speakClipKey('elec_step_wire');
+    } else {
+      soundEngine.speakClipKey(getPartVoiceClipKey(slot.partKind));
+    }
   };
 
   const connectNodes = (nodeA: string, nodeB: string, preferredColor?: string) => {
@@ -361,15 +389,56 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
     }
 
     soundEngine.playWireSpark();
-    setWires((prev) => [
-      ...prev,
+    const nextWires = [
+      ...wires,
       {
         id: `w-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         fromNode: nodeA,
         toNode: nodeB,
         color,
       },
-    ]);
+    ];
+    setWires(nextWires);
+
+    // Check if all hint wires are now connected -> speak next step if switch/breaker/plug needed!
+    const stillMissingWire = level.hintWires.some((hw) => {
+      const m1 = `${hw.fromSlot}:${hw.fromTerm}`;
+      const m2 = `${hw.toSlot}:${hw.toTerm}`;
+      return !nextWires.some(
+        (w) =>
+          (w.fromNode === m1 && w.toNode === m2) ||
+          (w.fromNode === m2 && w.toNode === m1)
+      );
+    });
+
+    if (!stillMissingWire) {
+      const breakerOff = level.slots.some(
+        (s) => s.partKind === 'mcb_breaker' && !switch1Map[s.slotId]
+      );
+      if (breakerOff) {
+        soundEngine.speakClipKey('elec_step_breaker_on');
+      } else if (level.requiresSwitchToggle) {
+        soundEngine.speakClipKey('elec_step_switch_on');
+      } else if (level.pluggableAppliance && !pluggedIn) {
+        soundEngine.speakClipKey('elec_step_plug_in');
+      }
+    }
+  };
+
+  // Speak current step helper when child clicks "بگو چیکار کنم؟"
+  const speakCurrentStepInstruction = () => {
+    if (unplacedSlots.length > 0) {
+      soundEngine.speakClipKey('elec_step_place');
+    } else if (nextHintWire) {
+      soundEngine.speakClipKey('elec_step_wire');
+    } else {
+      const breakerOff = level.slots.some(
+        (s) => s.partKind === 'mcb_breaker' && !switch1Map[s.slotId]
+      );
+      if (breakerOff) soundEngine.speakClipKey('elec_step_breaker_on');
+      else if (level.pluggableAppliance && !pluggedIn) soundEngine.speakClipKey('elec_step_plug_in');
+      else soundEngine.speakClipKey('elec_step_switch_on');
+    }
   };
 
   const handleTerminalClick = (nodeKey: string) => {
@@ -424,28 +493,24 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
     setSwitch1Map((prev) => {
       const next = !prev[slot.slotId];
       soundEngine.playSwitchClick(next);
+      // If breaker just turned ON and plug is still needed, guide child to plug!
+      if (slot.partKind === 'mcb_breaker' && next && level.pluggableAppliance && !pluggedIn) {
+        setTimeout(() => soundEngine.speakClipKey('elec_step_plug_in'), 350);
+      }
       return { ...prev, [slot.slotId]: next };
     });
   };
 
-  const nextHintWire = useMemo(() => {
-    for (const hw of level.hintWires) {
-      if (!placedSlots[hw.fromSlot] || !placedSlots[hw.toSlot]) continue;
-      const n1 = `${hw.fromSlot}:${hw.fromTerm}`;
-      const n2 = `${hw.toSlot}:${hw.toTerm}`;
-      const found = wires.some(
-        (w) =>
-          (w.fromNode === n1 && w.toNode === n2) ||
-          (w.fromNode === n2 && w.toNode === n1)
-      );
-      if (!found) return { n1, n2, color: hw.wireColor || '#ef4444' };
-    }
-    return null;
-  }, [level.hintWires, wires, placedSlots]);
-
-  const unplacedSlots = level.slots.filter((s) => !placedSlots[s.slotId]);
   const anyOutletPowered = level.slots.some(
     (s) => s.partKind === 'wall_outlet' && simulation.poweredLoads.has(s.slotId)
+  );
+  const anyLampLit = level.slots.some(
+    (s) =>
+      (s.partKind.startsWith('bulb') ||
+        s.partKind === 'ceiling_lamp' ||
+        s.partKind === 'chandelier_dual' ||
+        s.partKind === 'led_disco') &&
+      simulation.poweredLoads.has(s.slotId)
   );
 
   const makeWirePath = (x1: number, y1: number, x2: number, y2: number) => {
@@ -456,29 +521,35 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
 
   const boardBgClass =
     level.boardTheme === 'wall'
-      ? 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 border-sky-400/35'
+      ? 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 border-sky-400/45'
       : level.boardTheme === 'tech'
-      ? 'bg-gradient-to-br from-indigo-950 via-slate-900 to-emerald-950 border-cyan-400/35'
-      : 'bg-gradient-to-br from-amber-950/95 via-stone-900 to-amber-950 border-amber-400/45';
+      ? 'bg-gradient-to-br from-indigo-950 via-slate-900 to-emerald-950 border-cyan-400/45'
+      : 'bg-gradient-to-br from-amber-950 via-stone-900 to-amber-950 border-amber-400/50';
 
   return (
     <div className="flex flex-col gap-3 w-full">
-      {/* Top Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/80 border border-white/10 rounded-2xl px-4 py-2.5">
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-amber-200 font-bold">
-          <Zap className="w-5 h-5 text-amber-400 animate-pulse shrink-0" />
+      {/* Top Interactive Voice Step Coach Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 border border-white/15 rounded-2xl px-4 py-2.5 shadow-lg">
+        <button
+          type="button"
+          onClick={speakCurrentStepInstruction}
+          className="flex items-center gap-2 text-xs sm:text-sm text-amber-200 hover:text-amber-100 font-black text-right"
+        >
+          <span className="p-1.5 rounded-xl bg-amber-400 text-slate-950 shadow">
+            <Volume2 className="w-4 h-4" />
+          </span>
           <span>
             {unplacedSlots.length > 0
-              ? `قدم اول: قطعات پایین را بردار و بگذار روی میز (${level.slots.length - unplacedSlots.length} از ${level.slots.length})`
+              ? `🔊 بگو چیکار کنم: اول قطعه‌های پایین رو بردار بذار روی میز (${level.slots.length - unplacedSlots.length} از ${level.slots.length})`
               : selectedNode
-              ? 'حالا دایره رنگی قطعه دوم را لمس کن تا سیم وصل شود!'
+              ? '🔊 حالا دایره رنگی قطعه دوم رو لمس کن تا سیم وصل بشه!'
               : nextHintWire
-              ? 'قدم دوم: قرقره سیم را بردار یا دایره‌های رنگی قطعات را به هم وصل کن!'
+              ? '🔊 قدم دوم: روی قرقره سیم پایین بزن یا دایره‌های رنگی رو وصل کن!'
               : level.pluggableAppliance && !pluggedIn
-              ? 'قدم آخر: فیوز را روشن کن و دوشاخه وسیله برقی را بزن به پریز!'
-              : 'حالا کلید یا فیوز را روشن کن تا سیستم به کار بیفتد!'}
+              ? '🔊 قدم آخر: فیوز رو روشن کن و دوشاخه وسیله رو بزن توی پریز!'
+              : '🔊 عالیه! حالا کلید یا فیوز روی میز رو روشن کن!'}
           </span>
-        </div>
+        </button>
 
         <div className="flex items-center gap-2">
           {unplacedSlots.length > 0 && (
@@ -489,11 +560,12 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
                 const all: Record<string, boolean> = {};
                 level.slots.forEach((s) => (all[s.slotId] = true));
                 setPlacedSlots(all);
+                soundEngine.speakClipKey('elec_step_wire');
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/40 text-emerald-200 text-xs font-bold transition"
             >
               <Sparkles className="w-4 h-4" />
-              چیدن قطعات
+              چیدن خودکار
             </button>
           )}
           <button
@@ -509,7 +581,7 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
             }`}
           >
             <Lightbulb className="w-4 h-4" />
-            راهنما
+            خط راهنما
           </button>
           <button
             type="button"
@@ -544,8 +616,13 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
             setPointerPos(null);
           }
         }}
-        className={`relative w-full h-[430px] sm:h-[460px] rounded-3xl border-2 shadow-2xl overflow-hidden select-none ${boardBgClass}`}
+        className={`relative w-full h-[435px] sm:h-[465px] rounded-[2rem] border-2 shadow-2xl overflow-hidden select-none transition-all duration-500 ${boardBgClass}`}
       >
+        {/* Warm Room Illumination Bloom when lamps light up! */}
+        {anyLampLit && (
+          <div className="absolute inset-0 bg-radial from-amber-300/15 via-transparent to-transparent pointer-events-none animate-pulse" />
+        )}
+
         <div
           className="absolute inset-0 opacity-15 pointer-events-none"
           style={{
@@ -558,8 +635,9 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
         />
 
         {level.boardTheme === 'wall' && (
-          <div className="absolute top-2.5 right-4 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-[11px] font-bold text-sky-200 pointer-events-none">
-            🏠 دیوار تمرین برق‌کشی ساختمان (قرمز = فاز | آبی = نول)
+          <div className="absolute top-3 right-4 px-3.5 py-1 rounded-full bg-sky-500/25 border border-sky-400/40 text-[11px] font-black text-sky-200 pointer-events-none flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-amber-300" />
+            <span>دیوار برق‌کشی ساختمان (قرمز = فاز | آبی = نول)</span>
           </div>
         )}
 
@@ -567,12 +645,12 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-rose-600/95 border-2 border-amber-300 text-white px-4 py-2 rounded-2xl shadow-xl animate-bounce">
             <AlertTriangle className="w-5 h-5 text-amber-300" />
             <span className="text-xs sm:text-sm font-black">
-              آخ! اتصال کوتاه شد! روی سیم اشتباه کلیک کن تا باز بشه!
+              آخ عزیزم! اتصال کوتاه شد! روی سیم اشتباه کلیک کن تا باز بشه!
             </span>
           </div>
         )}
 
-        {/* SVG Flexible Physics Wires Layer */}
+        {/* SVG Flexible 3D Insulated Wires Layer */}
         <svg
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
@@ -588,7 +666,7 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
               )}
               fill="none"
               stroke="#fde047"
-              strokeWidth="1.2"
+              strokeWidth="1.25"
               strokeDasharray="2.2 1.8"
               className="animate-pulse"
             />
@@ -611,22 +689,24 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
                   setWires((prev) => prev.filter((item) => item.id !== w.id));
                 }}
               >
-                <path d={d} fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="2.5" strokeLinecap="round" />
-                <path d={d} fill="none" stroke={w.color} strokeWidth="1.5" strokeLinecap="round" />
+                <path d={d} fill="none" stroke="rgba(0,0,0,0.55)" strokeWidth="2.8" strokeLinecap="round" />
+                <path d={d} fill="none" stroke={w.color} strokeWidth="1.7" strokeLinecap="round" />
+                {/* Glossy wire highlight */}
+                <path d={d} fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="0.45" strokeLinecap="round" />
                 {isFlowing && (
                   <path
                     d={d}
                     fill="none"
                     stroke="#fef08a"
-                    strokeWidth="0.85"
-                    strokeDasharray="1.4 2.4"
+                    strokeWidth="0.95"
+                    strokeDasharray="1.3 2.3"
                     strokeLinecap="round"
                   >
                     <animate
                       attributeName="stroke-dashoffset"
                       from="12"
                       to="0"
-                      dur="0.6s"
+                      dur="0.55s"
                       repeatCount="indefinite"
                     />
                   </path>
@@ -645,7 +725,7 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
               )}
               fill="none"
               stroke="#fde047"
-              strokeWidth="1.25"
+              strokeWidth="1.3"
               strokeDasharray="1.6 1.2"
             />
           )}
@@ -657,6 +737,24 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
           const isPowered = simulation.poweredLoads.has(slot.slotId);
           const terms = getTerminalsForPart(slot.partKind);
           const label = slot.customLabel || PART_NAMES_FA[slot.partKind];
+
+          // Show bouncing hand on switch/breaker when wiring is done!
+          const needsSwitchClick =
+            isPlaced &&
+            unplacedSlots.length === 0 &&
+            !nextHintWire &&
+            !completedOnce &&
+            ((slot.partKind === 'mcb_breaker' && !switch1Map[slot.slotId]) ||
+              ((slot.partKind === 'toggle_switch' ||
+                slot.partKind === 'push_button' ||
+                slot.partKind === 'wall_switch_1' ||
+                slot.partKind === 'wall_switch_2' ||
+                slot.partKind === 'dimmer_knob' ||
+                slot.partKind === 'light_sensor') &&
+                !isPowered &&
+                (!switch1Map[slot.slotId] ||
+                  (slot.partKind === 'wall_switch_2' && !switch2Map[slot.slotId]) ||
+                  (slot.partKind === 'dimmer_knob' && (dimmerMap[slot.slotId] ?? 0) === 0))));
 
           return (
             <div
@@ -681,18 +779,24 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
               }`}
             >
               {!isPlaced ? (
-                <div className="w-32 h-26 rounded-2xl border-2 border-dashed border-amber-300/75 bg-slate-900/65 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center animate-pulse shadow-lg">
+                <div className="w-32 h-26 rounded-2xl border-2 border-dashed border-amber-300/80 bg-slate-900/70 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center animate-pulse shadow-lg">
                   <span className="text-xs font-extrabold text-amber-300">{label}</span>
-                  <span className="text-[10px] text-slate-300 mt-1">اینجا بگذار 👇</span>
+                  <span className="text-[10px] text-slate-200 mt-1">اینجا بگذار 👇</span>
                 </div>
               ) : (
                 <div
-                  className={`relative rounded-2xl px-3 py-2 backdrop-blur-md border-2 transition-all ${
+                  className={`relative rounded-2xl px-3.5 py-2.5 backdrop-blur-md border-2 transition-all ${
                     isPowered
-                      ? 'bg-slate-900/90 border-amber-400 shadow-[0_0_32px_rgba(250,204,21,0.42)]'
-                      : 'bg-slate-900/85 border-white/20 shadow-xl'
+                      ? 'bg-slate-900/92 border-amber-400 shadow-[0_0_38px_rgba(250,204,21,0.48)]'
+                      : 'bg-slate-900/88 border-white/25 shadow-2xl'
                   }`}
                 >
+                  {needsSwitchClick && (
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-2xl animate-bounce pointer-events-none z-30">
+                      👇
+                    </div>
+                  )}
+
                   <ElectricPartGraphic
                     kind={slot.partKind}
                     powered={isPowered}
@@ -703,7 +807,7 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
                     pluggedIn={pluggedIn}
                     onInteract={(sub) => handleInteractPart(slot, sub)}
                   />
-                  <div className="text-[11px] font-extrabold text-center text-white/95 mt-0.5 whitespace-nowrap">
+                  <div className="text-[11px] font-black text-center text-white mt-0.5 whitespace-nowrap">
                     {label}
                   </div>
 
@@ -760,11 +864,11 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
 
         {/* Pluggable Household Appliance Widget */}
         {level.pluggableAppliance && (
-          <div className="absolute bottom-3 left-3 z-20 bg-slate-950/95 border-2 border-cyan-400/50 rounded-2xl p-3 shadow-2xl flex items-center gap-3">
+          <div className="absolute bottom-3 left-3 z-20 bg-slate-950/95 border-2 border-cyan-400/60 rounded-2xl p-3 shadow-2xl flex items-center gap-3">
             <div
               className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform ${
                 pluggedIn && anyOutletPowered
-                  ? 'bg-amber-400/30 scale-110 animate-bounce shadow-[0_0_20px_rgba(250,204,21,0.6)]'
+                  ? 'bg-amber-400/30 scale-110 animate-bounce shadow-[0_0_22px_rgba(250,204,21,0.65)]'
                   : 'bg-slate-800'
               }`}
             >
@@ -788,78 +892,62 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
                   soundEngine.playSnap();
                   setPluggedIn((p) => !p);
                 }}
-                className={`mt-1.5 flex items-center justify-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black transition ${
+                className={`mt-1.5 flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black border-b-2 transition ${
                   pluggedIn
-                    ? 'bg-emerald-400 text-slate-950'
-                    : 'bg-amber-400 hover:bg-amber-300 text-slate-950 animate-pulse'
+                    ? 'bg-emerald-400 border-emerald-600 text-slate-950'
+                    : 'bg-amber-400 hover:bg-amber-300 border-amber-600 text-slate-950 animate-pulse'
                 }`}
               >
                 <Plug className="w-4 h-4" />
-                {pluggedIn ? 'دوشاخه داخل پریز است ✓' : 'زدن دوشاخه به پریز 🔌'}
+                {pluggedIn ? 'دوشاخه داخل پریز است ✓' : 'زدن دوشاخه به پریز 🔌 👆'}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Tray: Pick up Parts + Pick up Wire Spools! OR Victory Next-Level Banner */}
+      {/* Bottom Tray OR Spoken Victory Story Banner */}
       {completedOnce ? (
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 border-2 border-amber-300 rounded-3xl p-4 shadow-2xl animate-pulse-glow">
-          <div className="flex items-center gap-3">
-            <div className="text-4xl">🏆</div>
-            <div>
-              <h4 className="text-lg sm:text-xl font-black text-white">
-                آفرین دانشمند کوچولو! سیستم به کار افتاد! ⭐
-              </h4>
-              <p className="text-xs sm:text-sm text-emerald-50 font-medium mt-0.5">
-                {level.scienceTip}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop(740);
-              onNextLevel();
-            }}
-            className="px-7 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-base sm:text-lg shadow-xl transition transform hover:scale-105 active:scale-95"
-          >
-            مرحله بعدی ⬅
-          </button>
-        </div>
+        <VictoryStoryBanner level={level} onNextLevel={onNextLevel} />
       ) : (
-        <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-3.5 flex flex-wrap items-center justify-center gap-3 min-h-[96px]">
-          {/* Unplaced Components in Tray */}
-          {unplacedSlots.map((slot) => (
+        <div className="bg-slate-900/92 border-2 border-white/15 rounded-3xl p-3.5 flex flex-wrap items-center justify-center gap-3.5 min-h-[100px] shadow-xl">
+          {unplacedSlots.map((slot, idx) => (
             <div
               key={slot.slotId}
               draggable
               onDragStart={(e) => e.dataTransfer.setData('partKind', slot.partKind)}
               onClick={() => placeSlotPart(slot)}
-              className="cursor-grab active:cursor-grabbing group flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700 border-2 border-amber-400/60 hover:border-amber-300 rounded-2xl px-3.5 py-2 shadow-lg transition transform hover:-translate-y-1"
+              className="relative cursor-grab active:cursor-grabbing group flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700 border-2 border-amber-400/70 hover:border-amber-300 border-b-4 rounded-2xl px-4 py-2.5 shadow-lg transition transform hover:-translate-y-1"
             >
+              {idx === 0 && (
+                <span className="absolute -top-4 -right-2 text-2xl animate-bounce pointer-events-none">
+                  👆
+                </span>
+              )}
               <div className="scale-75 -m-3 pointer-events-none">
                 <ElectricPartGraphic kind={slot.partKind} powered={false} />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-white">
+                <span className="text-xs sm:text-sm font-black text-white">
                   {slot.customLabel || PART_NAMES_FA[slot.partKind]}
                 </span>
-                <span className="text-[10px] text-amber-300 font-bold">
-                  بردار و بگذار بالا ☝️
+                <span className="text-[11px] text-amber-300 font-bold">
+                  بزن روش تا بره روی میز ☝️
                 </span>
               </div>
             </div>
           ))}
 
-          {/* Tactile Wire Spool Item! Kid can either pick up this Wire Spool OR connect terminals manually */}
           {unplacedSlots.length === 0 && nextHintWire && (
             <div
               draggable
               onDragStart={(e) => e.dataTransfer.setData('wireSpool', 'next')}
               onClick={() => connectNodes(nextHintWire.n1, nextHintWire.n2, nextHintWire.color)}
-              className="cursor-grab active:cursor-grabbing flex items-center gap-3 bg-gradient-to-l from-red-500/25 via-slate-800 to-blue-500/25 hover:from-red-500/40 hover:to-blue-500/40 border-2 border-amber-300 rounded-2xl px-5 py-2.5 shadow-xl transition transform hover:-translate-y-1"
+              className="relative cursor-grab active:cursor-grabbing flex items-center gap-3.5 bg-gradient-to-l from-red-500/30 via-slate-800 to-blue-500/30 hover:from-red-500/45 hover:to-blue-500/45 border-2 border-amber-300 border-b-4 rounded-2xl px-6 py-3 shadow-xl transition transform hover:-translate-y-1"
             >
+              <span className="absolute -top-4 -right-2 text-2xl animate-bounce pointer-events-none">
+                👆
+              </span>
               <svg viewBox="0 0 64 54" className="w-12 h-11 drop-shadow">
                 <rect x="10" y="6" width="44" height="8" rx="4" fill="#cbd5e1" />
                 <rect x="10" y="40" width="44" height="8" rx="4" fill="#cbd5e1" />
@@ -868,11 +956,11 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
                 <line x1="16" y1="31" x2="48" y2="31" stroke="#fff" strokeOpacity="0.4" strokeWidth="2" />
               </svg>
               <div className="flex flex-col text-right">
-                <span className="text-xs sm:text-sm font-black text-white">
-                  برداشتن سیم رابط و اتصال 🔌
+                <span className="text-sm font-black text-white">
+                  برداشتن سیم رابط و اتصال خودکار 🔌
                 </span>
-                <span className="text-[11px] text-amber-300 font-bold">
-                  کلیک کن یا بکش روی میز (یا دایره‌های رنگی قطعات رو به هم وصل کن!)
+                <span className="text-xs text-amber-300 font-bold">
+                  اینجا بزن تا سیم وصل بشه (یا خودت دایره‌های رنگی رو به هم وصل کن!)
                 </span>
               </div>
             </div>
@@ -882,7 +970,7 @@ export const ElectricLab: React.FC<ElectricLabProps> = ({
             <div className="flex items-center gap-2 text-emerald-300 font-black text-xs sm:text-sm animate-bounce">
               <span>⚡</span>
               <span>
-                سیم‌کشی کامله! حالا کلید / فیوز / دوشاخه روی میز رو بزن تا مدار روشن بشه!
+                سیم‌کشی کامله عزیزم! حالا کلید / فیوز / دوشاخه روی میز رو بزن تا روشن بشه!
               </span>
             </div>
           )}

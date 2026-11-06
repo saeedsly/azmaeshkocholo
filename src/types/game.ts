@@ -232,10 +232,16 @@ export interface LevelPackManifest {
 
 export interface PlayerProgress {
   completedIds: Record<string, number>; // levelId -> stars (1..3)
+  lastPlayedLevelId?: Record<LabId, string>;
   soundEnabled: boolean;
   voiceEnabled: boolean;
+  narratorVoice?: 'fa-IR-DilaraNeural' | 'fa-IR-FaridNeural';
   updateManifestUrl: string;
   installedPackIds: string[];
   childName: string;
+  creatorName?: string;
+  creatorRole?: string;
+  creatorDedication?: string;
+  creatorPhotoDataUrl?: string;
   customCheerAudioDataUrl?: string;
 }

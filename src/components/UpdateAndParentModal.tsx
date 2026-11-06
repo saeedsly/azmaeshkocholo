@@ -36,6 +36,7 @@ declare global {
       importPackDialog: () => Promise<LevelPackManifest | null>;
       exportPackDialog: (pack: LevelPackManifest) => Promise<boolean>;
       checkAppUpdate: () => Promise<{ status: string; message?: string; version?: string }>;
+      synthesizePersian?: (text: string, voiceName?: string) => Promise<string | null>;
     };
   }
 }
@@ -288,7 +289,7 @@ export const UpdateAndParentModal: React.FC<Props> = ({
                 مرکز مدیریت، بروزرسانی مراحل و پنل والدین
               </h3>
               <p className="text-xs text-slate-400">
-                نسخه ۱.۰.۰ | مجموع مراحل فعال: {allLevels.length} مرحله ({customLevels.length} مرحله افزوده‌شده)
+                نسخه ۲.۰.۰ اولترا پرو (گوینده فارسی هوشمند) | مجموع مراحل فعال: {allLevels.length} مرحله ({customLevels.length} مرحله افزوده‌شده)
               </p>
             </div>
           </div>
@@ -551,7 +552,7 @@ export const UpdateAndParentModal: React.FC<Props> = ({
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-slate-800/80 border border-white/10 space-y-3">
                 <label className="block text-xs font-black text-amber-300">
-                  نام پسر گلتان (برای نمایش در آزمایشگاه):
+                  نام پسر گلتان (برای نمایش و خطاب در آزمایشگاه):
                 </label>
                 <input
                   type="text"
@@ -560,6 +561,52 @@ export const UpdateAndParentModal: React.FC<Props> = ({
                   className="w-full sm:w-72 px-3.5 py-2 rounded-xl bg-slate-950 border border-white/20 text-white font-bold text-sm"
                   placeholder="دانشمند کوچولو"
                 />
+              </div>
+
+              <div className="p-4 rounded-2xl bg-indigo-950/60 border border-amber-400/40 space-y-3">
+                <h4 className="font-black text-amber-300">
+                  🗣️ انتخاب گوینده هوشمند فارسی (آموزش قدم‌به‌قدم و قصه‌گوی علمی)
+                </h4>
+                <p className="text-xs text-slate-200 leading-relaxed">
+                  در تمام مراحل، گوینده فارسی به صورت صوتی به فرزندتان می‌گوید چه کاری انجام دهد و پس از انجام آزمایش، اتفاق علمی را با زبان کودکانه توضیح می‌دهد:
+                </p>
+                <div className="flex flex-wrap gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEngine.narratorVoice = 'fa-IR-DilaraNeural';
+                      onUpdateProgress({ narratorVoice: 'fa-IR-DilaraNeural' });
+                      soundEngine.speakPersian(
+                        `سلام ${progress.childName}! من خاله دلارا هستم و توی همه آزمایش‌ها کمکت می‌کنم!`,
+                        'welcome_home'
+                      );
+                    }}
+                    className={`px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm border-2 transition ${
+                      (progress.narratorVoice || 'fa-IR-DilaraNeural') === 'fa-IR-DilaraNeural'
+                        ? 'bg-amber-400 text-slate-950 border-white shadow-lg'
+                        : 'bg-slate-900 text-slate-200 border-white/15'
+                    }`}
+                  >
+                    👩‍🔬 صدای خاله دلارا (مهربان و کودکانه - پیش‌فرض)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEngine.narratorVoice = 'fa-IR-FaridNeural';
+                      onUpdateProgress({ narratorVoice: 'fa-IR-FaridNeural' });
+                      soundEngine.speakPersian(
+                        `سلام ${progress.childName} قهرمان! من عمو فرید هستم! بیا با هم آزمایش‌های باحال انجام بدیم!`
+                      );
+                    }}
+                    className={`px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm border-2 transition ${
+                      progress.narratorVoice === 'fa-IR-FaridNeural'
+                        ? 'bg-cyan-400 text-slate-950 border-white shadow-lg'
+                        : 'bg-slate-900 text-slate-200 border-white/15'
+                    }`}
+                  >
+                    👨‍🔬 صدای عمو فرید (انرژی‌دار و علمی)
+                  </button>
+                </div>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-800/80 border border-white/10 space-y-3">

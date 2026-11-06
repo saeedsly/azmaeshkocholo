@@ -7,8 +7,10 @@ import {
 } from '../../types/game';
 import { CHEM_INGREDIENT_META } from '../../data/chemistryLevels';
 import { soundEngine } from '../../utils/soundEngine';
+import { getChemPourVoiceKey } from '../../utils/kidExplanations';
 import { ReactionCanvasFX } from './ReactionCanvasFX';
-import { FlaskConical, RotateCcw, Sparkles } from 'lucide-react';
+import { VictoryStoryBanner } from '../VictoryStoryBanner';
+import { RotateCcw, Sparkles, Volume2 } from 'lucide-react';
 
 interface ChemistryLabProps {
   level: ChemistryLevel;
@@ -35,7 +37,7 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
       init[v.vesselId] = [];
     });
     setVesselContents(init);
-    setSelectedIng(level.availableIngredients[0] || null);
+    setSelectedIng(level.vessels[0]?.requiredIngredients[0] || level.availableIngredients[0] || null);
     setPouringState(null);
     setCompletedOnce(false);
   }, [level]);
@@ -43,7 +45,6 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
   const isVesselComplete = (v: ChemVesselSpec, contents = vesselContents[v.vesselId] || []) =>
     v.requiredIngredients.every((req) => contents.includes(req));
 
-  // Check if all vessels completed!
   useEffect(() => {
     if (completedOnce) return;
     const allDone = level.vessels.every((v) =>
@@ -53,13 +54,36 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
       setCompletedOnce(true);
       soundEngine.playVictoryFanfare();
       confetti({
-        particleCount: 100,
-        spread: 85,
-        origin: { y: 0.6 },
+        particleCount: 115,
+        spread: 88,
+        origin: { y: 0.58 },
       });
       onComplete();
     }
   }, [vesselContents, level, completedOnce, onComplete]);
+
+  // Find the very next missing ingredient across vessels to guide the 4-year-old!
+  const getNextGuidedAction = (stateMap = vesselContents) => {
+    for (const v of level.vessels) {
+      const added = stateMap[v.vesselId] || [];
+      const nextReq = v.requiredIngredients.find((r) => !added.includes(r));
+      if (nextReq) {
+        return { vessel: v, ing: nextReq };
+      }
+    }
+    return null;
+  };
+
+  const nextAction = getNextGuidedAction();
+
+  const speakNextChemStep = () => {
+    if (!nextAction) return;
+    const ingName = CHEM_INGREDIENT_META[nextAction.ing].name;
+    soundEngine.speakPersian(
+      `عزیزم، حالا ${ingName} رو بردار و بریز توی ${nextAction.vessel.label}!`,
+      'chem_step_start'
+    );
+  };
 
   const addIngredientToVessel = (vessel: ChemVesselSpec, ing: ChemIngredientId) => {
     const current = vesselContents[vessel.vesselId] || [];
@@ -68,9 +92,12 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
       return;
     }
 
-    // Check if this ingredient belongs in this vessel so a 4-year-old doesn't ruin the potion!
     if (!vessel.requiredIngredients.includes(ing)) {
       soundEngine.playShortCircuitWarning();
+      soundEngine.speakPersian(
+        `عزیزم، این ماده مال یک شیشه دیگه است! دکمه‌های چشمک‌زن زیر شیشه رو نگاه کن!`,
+        'chem_step_start'
+      );
       return;
     }
 
@@ -84,15 +111,19 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
     setPouringState({ vesselId: vessel.vesselId, ing });
     setTimeout(() => {
       setPouringState((prev) => (prev?.vesselId === vessel.vesselId ? null : prev));
-    }, 650);
+    }, 680);
 
     const updated = [...current, ing];
-    setVesselContents((prev) => ({
-      ...prev,
+    const nextStateMap = {
+      ...vesselContents,
       [vessel.vesselId]: updated,
-    }));
+    };
+    setVesselContents(nextStateMap);
 
-    // Trigger dramatic reaction sound if this completed the vessel!
+    const willFinishAllVessels = level.vessels.every((v) =>
+      isVesselComplete(v, nextStateMap[v.vesselId] || [])
+    );
+
     if (vessel.requiredIngredients.every((r) => updated.includes(r))) {
       if (
         vessel.resultEffect === 'foam_geyser' ||
@@ -100,42 +131,47 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
         vessel.resultEffect === 'lava_lamp' ||
         vessel.resultEffect === 'balloon_inflate'
       ) {
-        setTimeout(() => soundEngine.playFizzEruption(), 250);
+        setTimeout(() => soundEngine.playFizzEruption(), 220);
       } else {
-        setTimeout(() => soundEngine.playWireSpark(), 250);
+        setTimeout(() => soundEngine.playWireSpark(), 220);
       }
     }
 
-    // Auto-select next needed ingredient for effortless 4-year-old play!
-    const nextMissing = vessel.requiredIngredients.find((r) => !updated.includes(r));
-    if (nextMissing) {
-      setSelectedIng(nextMissing);
-    } else {
-      // Check other vessels
-      for (const other of level.vessels) {
-        if (other.vesselId === vessel.vesselId) continue;
-        const otherCur = vesselContents[other.vesselId] || [];
-        const m = other.requiredIngredients.find((r) => !otherCur.includes(r));
-        if (m) {
-          setSelectedIng(m);
-          break;
-        }
+    // If the level isn't finished yet, speak warm step encouragement for the next ingredient!
+    const upcoming = getNextGuidedAction(nextStateMap);
+    if (upcoming) {
+      setSelectedIng(upcoming.ing);
+      if (!willFinishAllVessels) {
+        const pourClip = getChemPourVoiceKey(ing);
+        const nextIngName = CHEM_INGREDIENT_META[upcoming.ing].name;
+        setTimeout(() => {
+          soundEngine.speakPersian(
+            `آفرین! حالا ${nextIngName} رو بریز توی ${upcoming.vessel.label}!`,
+            pourClip || 'chem_step_start'
+          );
+        }, 380);
       }
     }
   };
 
   return (
     <div className="flex flex-col gap-3 w-full">
-      {/* Top Status Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/80 border border-white/10 rounded-2xl px-4 py-2.5">
-        <div className="flex items-center gap-2 text-sm text-fuchsia-200 font-bold">
-          <FlaskConical className="w-5 h-5 text-fuchsia-400 animate-bounce" />
-          <span>
-            {selectedIng
-              ? `ماده انتخاب‌شده: «${CHEM_INGREDIENT_META[selectedIng].emoji} ${CHEM_INGREDIENT_META[selectedIng].name}» — روی شیشه مورد نظر کلیک کن یا بکش و بریز داخلش!`
-              : 'یک ماده از قفسه پایین بردار و داخل شیشه آزمایش بریز!'}
+      {/* Top Interactive Voice Step Coach Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 border border-white/15 rounded-2xl px-4 py-2.5 shadow-lg">
+        <button
+          type="button"
+          onClick={speakNextChemStep}
+          className="flex items-center gap-2 text-xs sm:text-sm text-fuchsia-200 hover:text-white font-black text-right"
+        >
+          <span className="p-1.5 rounded-xl bg-fuchsia-400 text-slate-950 shadow">
+            <Volume2 className="w-4 h-4" />
           </span>
-        </div>
+          <span>
+            {nextAction
+              ? `🔊 بگو چیکار کنم: حالا «${CHEM_INGREDIENT_META[nextAction.ing].emoji} ${CHEM_INGREDIENT_META[nextAction.ing].name}» رو بریز توی «${nextAction.vessel.label}»!`
+              : '🎉 همه واکنش‌ها کامل شد!'}
+          </span>
+        </button>
 
         <button
           type="button"
@@ -153,10 +189,19 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
         </button>
       </div>
 
-      {/* Main Chemistry Laboratory Table */}
-      <div className="relative w-full min-h-[420px] rounded-3xl border-2 border-fuchsia-400/30 bg-gradient-to-b from-indigo-950 via-slate-900 to-amber-950/70 shadow-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-6 select-none">
-        {/* Ambient Lab Shelf Sparkles */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-amber-900/80 to-transparent border-t border-amber-500/30 pointer-events-none" />
+      {/* Main Gleaming Chemistry Laboratory Stage */}
+      <div className="relative w-full min-h-[435px] rounded-[2rem] border-2 border-fuchsia-400/40 bg-gradient-to-b from-indigo-950 via-slate-900 to-amber-950/80 shadow-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-6 select-none">
+        {/* Lab Tile Backdrop Pattern */}
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, #f0abfc 1px, transparent 1px), linear-gradient(to bottom, #f0abfc 1px, transparent 1px)',
+            backgroundSize: '42px 42px',
+          }}
+        />
+        {/* Polished Wooden Lab Bench Surface */}
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-amber-950 via-amber-900/75 to-transparent border-t-2 border-amber-500/40 pointer-events-none" />
 
         {/* Glassware Vessels Row */}
         <div className="relative z-10 flex flex-wrap items-end justify-center gap-8 sm:gap-14 my-auto pt-8 pb-4">
@@ -190,14 +235,13 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                 }}
                 className="group relative flex flex-col items-center cursor-pointer transition-transform hover:scale-[1.03]"
               >
-                {/* Pouring Stream Animation */}
                 {isPouringHere && pouringState && (
                   <div className="absolute -top-12 z-30 flex flex-col items-center animate-bounce pointer-events-none">
                     <span className="text-4xl drop-shadow-lg">
                       {CHEM_INGREDIENT_META[pouringState.ing].emoji}
                     </span>
                     <div
-                      className="w-2.5 h-16 rounded-full opacity-90"
+                      className="w-3 h-16 rounded-full opacity-90 shadow-lg"
                       style={{
                         backgroundColor: CHEM_INGREDIENT_META[pouringState.ing].color,
                       }}
@@ -205,9 +249,8 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                   </div>
                 )}
 
-                {/* Reaction Title Badge */}
                 {reacted && (
-                  <div className="mb-2 px-3.5 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-black shadow-lg animate-bounce">
+                  <div className="mb-2 px-4 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-black shadow-xl animate-bounce">
                     ✨ {vessel.reactionTitle}
                   </div>
                 )}
@@ -220,13 +263,13 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                     primaryColor={vessel.resultColor}
                     secondaryColor={vessel.secondaryColor}
                   />
-                  {/* FOAM GEYSER / VOLCANO ERUPTION PLUME! */}
+
                   {reacted &&
                     (vessel.resultEffect === 'foam_geyser' ||
                       vessel.resultEffect === 'volcano_eruption') && (
                       <div className="absolute -top-14 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none">
                         <div
-                          className="w-20 h-24 rounded-full blur-[1px] animate-bounce shadow-2xl"
+                          className="w-22 h-26 rounded-full blur-[1px] animate-bounce shadow-2xl"
                           style={{
                             background: `radial-gradient(circle, ${
                               vessel.secondaryColor || '#fff'
@@ -248,20 +291,22 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                       </div>
                     )}
 
-                  {/* INFLATING BALLOON ON TOP OF BOTTLE! */}
                   {vessel.shape === 'balloon_bottle' && (
                     <div
-                      className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 transition-all duration-700 flex flex-col items-center pointer-events-none"
+                      className="absolute -top-14 left-1/2 -translate-x-1/2 z-20 transition-all duration-700 flex flex-col items-center pointer-events-none"
                       style={{
-                        transform: `translateX(-50%) scale(${reacted ? 1.35 : 0.42})`,
+                        transform: `translateX(-50%) scale(${reacted ? 1.45 : 0.42})`,
                       }}
                     >
                       <div
-                        className="w-16 h-20 rounded-full shadow-xl border-2 border-white/40"
+                        className="w-18 h-22 rounded-full shadow-2xl border-2 border-white/50 relative"
                         style={{
                           backgroundColor: vessel.secondaryColor || '#ec4899',
                         }}
-                      />
+                      >
+                        {/* Glossy Balloon Highlight */}
+                        <div className="w-4 h-7 rounded-full bg-white/40 absolute top-3 right-3 -rotate-12" />
+                      </div>
                       <div
                         className="w-4 h-3 -mt-1 rounded-sm"
                         style={{
@@ -272,7 +317,6 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                   )}
 
                   <svg viewBox="0 0 180 210" className="w-48 h-56 drop-shadow-2xl">
-                    {/* Volcano Cone Exterior if shape === 'volcano' */}
                     {vessel.shape === 'volcano' && (
                       <polygon
                         points="16,198 66,54 114,54 164,198"
@@ -282,7 +326,6 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                       />
                     )}
 
-                    {/* Glass Clip Path */}
                     <defs>
                       <clipPath id={`clip-${vessel.vesselId}`}>
                         {vessel.shape === 'bottle' || vessel.shape === 'balloon_bottle' ? (
@@ -297,9 +340,8 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                       </clipPath>
                     </defs>
 
-                    {/* Liquid Content inside ClipPath */}
                     <g clipPath={`url(#clip-${vessel.vesselId})`}>
-                      <rect x="0" y="0" width="180" height="210" fill="rgba(255,255,255,0.07)" />
+                      <rect x="0" y="0" width="180" height="210" fill="rgba(255,255,255,0.09)" />
 
                       {fillRatio > 0 && (
                         <>
@@ -356,7 +398,6 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                             />
                           )}
 
-                          {/* Dancing Raisins / Rising Bubbles / Magic Milk Rings / Crystals */}
                           {reacted && vessel.resultEffect === 'dancing_raisins' &&
                             [56, 88, 118].map((cx, i) => (
                               <circle key={cx} cx={cx} cy="150" r="7" fill="#581c87" stroke="#fff" strokeWidth="1.5">
@@ -400,9 +441,11 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                             ))}
                         </>
                       )}
+
+                      {/* Specular Vertical Glass Reflection Strip */}
+                      <rect x="46" y="36" width="8" height="145" rx="4" fill="rgba(255,255,255,0.22)" />
                     </g>
 
-                    {/* Crisp Glossy Glassware Rim & Reflections */}
                     {vessel.shape === 'bottle' || vessel.shape === 'balloon_bottle' ? (
                       <path
                         d="M70,24 L110,24 L110,66 L144,104 L144,194 Q90,202 36,194 L36,104 L70,66 Z"
@@ -443,13 +486,17 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                   </svg>
                 </div>
 
-                {/* Vessel Name & Pictorial Recipe Checklist for 4-Year-Olds! */}
-                <div className="mt-1 bg-slate-950/85 border border-white/15 rounded-2xl px-3.5 py-2 flex flex-col items-center gap-1.5 shadow-xl">
+                {/* Vessel Name & Pictorial Recipe Buttons with Bouncing Guiding Hand! */}
+                <div className="mt-1 bg-slate-950/90 border-2 border-white/15 rounded-2xl px-3.5 py-2.5 flex flex-col items-center gap-1.5 shadow-xl">
                   <span className="text-xs font-black text-white">{vessel.label}</span>
                   <div className="flex flex-wrap items-center justify-center gap-1.5">
                     {vessel.requiredIngredients.map((reqId) => {
                       const done = added.includes(reqId);
                       const m = CHEM_INGREDIENT_META[reqId];
+                      const isNextGuided =
+                        nextAction?.vessel.vesselId === vessel.vesselId &&
+                        nextAction?.ing === reqId;
+
                       return (
                         <button
                           key={reqId}
@@ -458,13 +505,20 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                             e.stopPropagation();
                             addIngredientToVessel(vessel, reqId);
                           }}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-xl text-[11px] font-bold transition ${
+                          className={`relative flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-black transition ${
                             done
                               ? 'bg-emerald-500/30 border border-emerald-400 text-emerald-200'
-                              : 'bg-slate-800 hover:bg-fuchsia-600/40 border border-dashed border-amber-300/70 text-amber-200 animate-pulse'
+                              : isNextGuided
+                              ? 'bg-amber-400 text-slate-950 border-2 border-white shadow-lg scale-105'
+                              : 'bg-slate-800 hover:bg-fuchsia-600/40 border border-dashed border-amber-300/70 text-amber-200'
                           }`}
                           title={`افزودن ${m.name}`}
                         >
+                          {isNextGuided && (
+                            <span className="absolute -top-5 -right-2 text-lg animate-bounce pointer-events-none">
+                              👆
+                            </span>
+                          )}
                           <span>{m.emoji}</span>
                           <span>{m.name}</span>
                           {done && <span>✓</span>}
@@ -479,36 +533,14 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
         </div>
       </div>
 
-      {/* Bottom Ingredient Bottles Shelf OR Victory Banner */}
+      {/* Bottom Shelf OR Spoken Victory Story Banner */}
       {completedOnce ? (
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 border-2 border-amber-300 rounded-3xl p-4 shadow-2xl animate-pulse-glow">
-          <div className="flex items-center gap-3">
-            <div className="text-4xl">🧪</div>
-            <div>
-              <h4 className="text-lg sm:text-xl font-black text-white">
-                هورااا! عجب واکنش شیمیایی باحالی ساختی! ⭐
-              </h4>
-              <p className="text-xs sm:text-sm text-fuchsia-100 font-medium mt-0.5">
-                {level.scienceTip}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop(740);
-              onNextLevel();
-            }}
-            className="px-7 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-base sm:text-lg shadow-xl transition transform hover:scale-105 active:scale-95"
-          >
-            مرحله بعدی ⬅
-          </button>
-        </div>
+        <VictoryStoryBanner level={level} onNextLevel={onNextLevel} />
       ) : (
-        <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-3.5 flex flex-wrap items-center justify-center gap-3">
+        <div className="bg-slate-900/92 border-2 border-white/15 rounded-3xl p-3.5 flex flex-wrap items-center justify-center gap-3 shadow-xl">
           <div className="w-full text-center text-xs text-amber-300 font-bold flex items-center justify-center gap-1.5">
             <Sparkles className="w-4 h-4" />
-            <span>قفسه مواد آزمایشگاهی — هر بطری را بکش داخل شیشه یا مستقیم روی دکمه‌های زیر هر شیشه بزن!</span>
+            <span>روی دکمه زرد زیر هر شیشه بزن، یا بطری‌ها رو از پایین بکش داخل شیشه!</span>
           </div>
           {level.availableIngredients.map((ingId) => {
             const meta = CHEM_INGREDIENT_META[ingId];
@@ -521,10 +553,11 @@ export const ChemistryLab: React.FC<ChemistryLabProps> = ({
                 onClick={() => {
                   soundEngine.playPop(540);
                   setSelectedIng(ingId);
+                  soundEngine.speakPersian(`${meta.name}! حالا بزن روی شیشه آزمایش!`);
                 }}
-                className={`cursor-grab active:cursor-grabbing flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-2 transition transform hover:-translate-y-1 shadow-lg ${
+                className={`cursor-grab active:cursor-grabbing flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-2 border-b-4 transition transform hover:-translate-y-1 shadow-lg ${
                   isSelected
-                    ? 'bg-fuchsia-600/35 border-amber-300 ring-2 ring-amber-300/60 scale-105'
+                    ? 'bg-fuchsia-600/40 border-amber-300 ring-2 ring-amber-300/60 scale-105'
                     : 'bg-slate-800 hover:bg-slate-700 border-white/15'
                 }`}
               >

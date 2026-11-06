@@ -1,8 +1,8 @@
 {
   "name": "daneshmand-kocholo",
-  "version": "1.0.0",
-  "description": "دانشمند کوچولو - بازی آموزشی و آزمایشگاهی ۲۷۰ مرحله‌ای (برق، شیمی و علوم) ویژه کودکان",
-  "author": "Daneshmand Kocholo Studio",
+  "version": "2.0.0",
+  "description": "دانشمند کوچولو (نسخه ۲.۰ سخنگو) - بازی آموزشی و آزمایشگاهی ۲۷۰ مرحله‌ای ویژه کودکان",
+  "author": "Saeed Salari (مهندس سعید سالاری)",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -17,8 +17,10 @@
   "dependencies": {
     "@fontsource/vazirmatn": "^5.1.0",
     "canvas-confetti": "^1.9.3",
+    "edge-tts-universal": "^1.4.0",
     "electron-updater": "^6.3.9",
     "lucide-react": "^0.468.0",
+    "msedge-tts": "^2.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
