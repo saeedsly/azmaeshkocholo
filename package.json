@@ -1,0 +1,39 @@
+{
+  "name": "daneshmand-kocholo",
+  "version": "1.0.0",
+  "description": "دانشمند کوچولو - بازی آموزشی و آزمایشگاهی ۲۷۰ مرحله‌ای (برق، شیمی و علوم) ویژه کودکان",
+  "author": "Daneshmand Kocholo Studio",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "electron:dev": "electron .",
+    "dist:win": "npm run build && electron-builder --win --x64 --publish never",
+    "dist:portable": "npm run build && electron-builder --win portable --x64 --publish never"
+  },
+  "dependencies": {
+    "@fontsource/vazirmatn": "^5.1.0",
+    "canvas-confetti": "^1.9.3",
+    "electron-updater": "^6.3.9",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.6.4",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

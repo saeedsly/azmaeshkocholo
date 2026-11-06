@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build & Release Outputs
+dist/
+dist-electron/
+release/
+build/
+out/
+
+# Logs & OS
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.env
+.env.local

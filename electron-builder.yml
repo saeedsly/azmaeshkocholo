@@ -1,0 +1,35 @@
+appId: com.saeedsly.daneshmandkocholo
+productName: Daneshmand Kocholo
+copyright: Copyright © 2026 Daneshmand Kocholo
+directories:
+  output: release
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+asarUnpack:
+  - dist/icon.ico
+  - dist/icon.png
+publish:
+  provider: github
+  owner: saeedsly
+  repo: azmaeshkocholo
+win:
+  icon: public/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+nsis:
+  unicode: true
+  artifactName: "Daneshmand-Kocholo-Setup-${version}.${ext}"
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "دانشمند کوچولو"
+portable:
+  artifactName: "Daneshmand-Kocholo-Portable-${version}.${ext}"

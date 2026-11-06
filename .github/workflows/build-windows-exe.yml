@@ -1,0 +1,66 @@
+name: Build Windows EXE (Daneshmand Kocholo)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Web & Windows EXE (Installer + Portable)
+        run: npm run dist:win
+
+      - name: Create Offline Web ZIP Bundle
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/* -DestinationPath release/Daneshmand-Kocholo-Offline-Web-1.0.0.zip -Force
+          Get-ChildItem release
+
+      - name: Upload Windows EXE Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Daneshmand-Kocholo-Windows-EXE
+          path: |
+            release/*.exe
+            release/*.zip
+            release/latest.yml
+          if-no-files-found: error
+
+      - name: Publish Public GitHub Release (Direct Download Links)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "دانشمند کوچولو نسخه ۱.۰.۰ (نسخه ویندوز EXE)"
+          body: |
+            ## 🔬 دانلود بازی آموزشی «دانشمند کوچولو» (۲۷۰ مرحله کامل)
+            - **نسخه نصبی ویندوز (پیشنهادی):** `Daneshmand-Kocholo-Setup-1.0.0.exe`
+            - **نسخه پرتابل بدون نیاز به نصب (فقط کلیک و اجرا):** `Daneshmand-Kocholo-Portable-1.0.0.exe`
+            - **بسته وب آفلاین:** `Daneshmand-Kocholo-Offline-Web-1.0.0.zip`
+          draft: false
+          prerelease: false
+          overwrite: true
+          files: |
+            release/Daneshmand-Kocholo-Setup-1.0.0.exe
+            release/Daneshmand-Kocholo-Portable-1.0.0.exe
+            release/Daneshmand-Kocholo-Offline-Web-1.0.0.zip
+            release/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

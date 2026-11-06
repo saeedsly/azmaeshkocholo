@@ -1,0 +1,82 @@
+{
+  "packId": "official-expansion-v1.1",
+  "version": "1.1.0",
+  "title": "بسته الحاقی ویژه قهرمانان (مراحل ۹۱ ویژه)",
+  "description": "۳ مرحله جدید ویژه برای هر سه آزمایشگاه برق، شیمی و علوم!",
+  "releasedAt": "2026-11-05",
+  "levels": [
+    {
+      "id": "elec-update-91",
+      "lab": "electric",
+      "number": 91,
+      "chapter": 9,
+      "chapterTitle": "مراحل ویژه بروزرسانی شده!",
+      "title": "مرحله ویژه ۹۱: اتاق رباتیک هوشمند خورشیدی با پریز!",
+      "kidPrompt": "مرحله جدید آپدیت شد! با پنل خورشیدی، کلید دیواری و پریز برق، هم ربات و هم چراغ ستاره‌ای رو روشن کن!",
+      "scienceTip": "این مرحله از طریق سیستم بروزرسانی پویا به بازی اضافه شده است!",
+      "boardTheme": "wall",
+      "requiresSwitchToggle": true,
+      "pluggableAppliance": "night_star",
+      "slots": [
+        { "slotId": "src", "partKind": "solar_panel", "customLabel": "خورشیدی ویژه", "x": 15, "y": 34 },
+        { "slotId": "sw1", "partKind": "wall_switch_1", "x": 42, "y": 68 },
+        { "slotId": "out1", "partKind": "wall_outlet", "x": 66, "y": 68 },
+        { "slotId": "bot", "partKind": "robot_buddy", "x": 78, "y": 24 }
+      ],
+      "targetLoads": ["bot", "out1"],
+      "hintWires": [
+        { "fromSlot": "src", "fromTerm": "pos", "toSlot": "sw1", "toTerm": "in", "wireColor": "#ef4444" },
+        { "fromSlot": "src", "fromTerm": "pos", "toSlot": "out1", "toTerm": "in", "wireColor": "#ef4444" },
+        { "fromSlot": "sw1", "fromTerm": "out", "toSlot": "bot", "toTerm": "in", "wireColor": "#f59e0b" },
+        { "fromSlot": "bot", "fromTerm": "out", "toSlot": "src", "toTerm": "neg", "wireColor": "#3b82f6" },
+        { "fromSlot": "out1", "fromTerm": "out", "toSlot": "src", "toTerm": "neg", "wireColor": "#3b82f6" }
+      ],
+      "isCustomOrUpdate": true
+    },
+    {
+      "id": "chem-update-91",
+      "lab": "chemistry",
+      "number": 91,
+      "chapter": 9,
+      "chapterTitle": "مراحل ویژه بروزرسانی شده!",
+      "title": "مرحله ویژه ۹۱: سوپر فواره کهکشانی نوشابه و اکلیل!",
+      "kidPrompt": "مرحله جدید آپدیت شد! نوشابه سیاه، اکلیل ستاره‌ای، قرص نعنا و نمک رو ترکیب کن!",
+      "scienceTip": "ترکیب نمک و قرص نعنایی بیشترین سرعت خروج گاز از نوشابه را ایجاد می‌کند!",
+      "availableIngredients": ["cola", "glitter", "mentos", "salt"],
+      "vessels": [
+        {
+          "vesselId": "v1",
+          "label": "بطری سوپر فواره",
+          "shape": "bottle",
+          "requiredIngredients": ["cola", "glitter", "mentos", "salt"],
+          "resultEffect": "foam_geyser",
+          "resultColor": "#451a03",
+          "secondaryColor": "#f472b6",
+          "reactionTitle": "سوپر فواره الماسی!"
+        }
+      ],
+      "isCustomOrUpdate": true
+    },
+    {
+      "id": "phys-update-91",
+      "lab": "physics",
+      "number": 91,
+      "chapter": 9,
+      "chapterTitle": "مراحل ویژه بروزرسانی شده!",
+      "title": "مرحله ویژه ۹۱: شکار بزرگ آهنربایی در کارگاه فضایی!",
+      "kidPrompt": "مرحله جدید آپدیت شد! هر ۴ قطعه آهنی فضاپیما رو با آهنربا جمع کن!",
+      "scienceTip": "در فضا هم آهنربا بدون نیاز به جاذبه زمین، آهن و فولاد را جذب می‌کند!",
+      "mode": "magnet_explore",
+      "targetGoalCount": 4,
+      "items": [
+        { "id": "u1", "name": "پیچ فضاپیما", "emoji": "🔩", "color": "#94a3b8", "isMagnetic": true, "materialLabel": "فولاد" },
+        { "id": "u2", "name": "آچار فضانورد", "emoji": "🔧", "color": "#cbd5e1", "isMagnetic": true, "materialLabel": "فولاد" },
+        { "id": "u3", "name": "چرخ‌دنده آهنی", "emoji": "⚙️", "color": "#64748b", "isMagnetic": true, "materialLabel": "آهن" },
+        { "id": "u4", "name": "قفل دریچه", "emoji": "🔒", "color": "#94a3b8", "isMagnetic": true, "materialLabel": "آهن" },
+        { "id": "u5", "name": "تکه چوب", "emoji": "🪵", "color": "#b45309", "isMagnetic": false, "materialLabel": "چوب" },
+        { "id": "u6", "name": "توپ بادی", "emoji": "🏀", "color": "#f97316", "isMagnetic": false, "materialLabel": "لاستیک" }
+      ],
+      "isCustomOrUpdate": true
+    }
+  ]
+}
